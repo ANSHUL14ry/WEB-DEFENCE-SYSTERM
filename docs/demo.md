@@ -55,7 +55,7 @@ Demonstrate real-time adaptive defense, automated behavioral detection (AgentShi
    - **Risk Engine Integration**: The Risk Engine automatically incorporates the AgentShield result, adding the `agentshield_behavior` signal (+20) to the overall risk assessment.
    - **Technical Disclaimer Highlighted**: The dashboard explicitly displays: *"AgentShield detects observable behavioral characteristics consistent with automated or agentic attack workflows. It does NOT identify specific AI models or claim proof of AI identity."*
 
-### Act 4: Deterministic Policy Engine & Deception Qualification (1:45 - 2:15)
+### Act 4: Deterministic Policy Engine & Deception Qualification (1:45 - 2:05)
 1. Policy Engine evaluates trusted security intelligence from WAF, Risk Engine, and AgentShield.
 2. Invariant verification:
    - WAF-dropped attack requests are strictly enforced as `BLOCK` (Terminal: `True`, Reason: `WAF_BLOCKED_TERMINAL`). Zero deception bypass.
@@ -64,11 +64,18 @@ Demonstrate real-time adaptive defense, automated behavioral detection (AgentShi
 3. SOC Dashboard displays the **Policy Engine Decision Panel**:
    - Live distribution breakdown (`ALLOW`, `MONITOR`, `RATE_LIMIT`, `BLOCK`, `DECEIVE_ELIGIBLE`).
    - Rule evaluation chain visualizer (`RULE_1_WAF_TERMINAL_BLOCK`, `RULE_2_DECEPTION_ELIGIBILITY`, etc.).
-   - Interactive Decision Drilldown showing input context and deterministic explanation.
-   - Clear Phase 7 disclaimer: *Phase 7 qualifies deception eligibility only; honeypot decoy redirection is scheduled for Phase 8 execution.*
 
-### Act 5: Adaptive Deception & Verification (2:15 - 3:00) — Phase 8 Roadmap
-1. Qualified `DECEIVE_ELIGIBLE` sessions are transparently diverted to isolated synthetic decoys in Phase 8.
-2. AEGIS runs automated verification query on origin server: Origin request log count = 0 during the attack phase.
-3. Dashboard updates status to: **`MITIGATION VERIFIED`**.
-4. AI SOC Copilot explains why the attack was isolated in plain English with evidence links.
+### Act 5: Isolated Adaptive Deception & Honeypot Execution (2:05 - 2:40) — Phase 8 Active
+1. **Deception Hand-off**: Qualified `DECEIVE_ELIGIBLE` requests trigger the Deception Router on internal `deception-net`.
+2. **Attacker Sandbox Interaction**:
+   - Attacker attempts login at `/login` $\rightarrow$ Fake authentication interface records attempt without storing passwords.
+   - Attacker probes `/admin/dashboard` $\rightarrow$ Decoy presents synthetic KPI metrics and logistics tables.
+   - Attacker inspects `/api/users` $\rightarrow$ Decoy returns synthetic JSON rosters.
+3. **Evidence Stream & Timeline**:
+   - SOC Dashboard's **Deception Panel** updates in real-time via WebSocket (`DECEPTION_EVENT`).
+   - Live Timeline visualizes the step-by-step attacker journey (`LOGIN` $\rightarrow$ `ADMIN` $\rightarrow$ `API`).
+4. **Origin Protection Verified**:
+   - Operator checks Origin logs: **0 requests hit the production origin application**. The attacker is completely contained within the synthetic sandbox.
+
+### Act 6: Response Verification (Phase 9 Roadmap)
+1. Cryptographic mitigation proof and verification receipts generated for compliance.

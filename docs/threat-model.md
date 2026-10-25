@@ -52,6 +52,12 @@ All attack simulation tools provided within this platform operate strictly in sa
 ---
 
 ## 4. Deception Isolation & Sandbox Principles
-- **No Production Data in Honeypots:** Decoys use 100% synthetic mock tables and synthetic session tokens.
-- **Network Isolation:** Honeypots have zero route access to real databases or production backends.
-- **Non-Bypass Rule:** A WAF-blocked request is never automatically bypassed into a honeypot; deception occurs strictly through explicit Policy Engine qualification.
+
+### Phase 8 Security Invariants:
+1. **Invariant 1: WAF Block $\rightarrow$ No Deception:** Any request dropped by the WAF is strictly terminal. Even if risk or AgentShield automation scores are Critical, WAF-blocked attacks cannot enter deception.
+2. **Invariant 2: Decoy $\rightarrow$ No Origin Access:** Decoy containers reside on an isolated internal network (`deception-net`) with zero network routing to the real origin (`origin:8088`).
+3. **Invariant 3: Decoy $\rightarrow$ No Production Database:** Decoy containers have no network route or credentials to connect to the PostgreSQL store (`db:5432`).
+4. **Invariant 4: Decoy $\rightarrow$ No Real Credentials:** The decoy contains zero real credentials, API keys, or secrets. All datasets are 100% synthetic.
+5. **Invariant 5: Deception Failure $\rightarrow$ No Origin Fallback:** If the deception container crashes or fails, the request is terminated with `DECEPTION_FAILED`. It **NEVER** silently falls back to the real origin.
+6. **Invariant 6: Client Cannot Directly Activate Deception:** Decoy execution APIs reject client-supplied headers (e.g. `X-Deceive: true`). Only verified backend policy decisions (`DECEIVE_ELIGIBLE`) can trigger deception.
+7. **Invariant 7: Sensitive Data $\rightarrow$ Sanitized Evidence:** Passwords, authentication headers, and tokens are scrubbed from evidence logs before database persistence. Raw credentials are never stored.

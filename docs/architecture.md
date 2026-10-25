@@ -269,6 +269,32 @@ SOC Dashboard Live Telemetry
 - **Failure Safety & Data Sanitization**: Policy evaluation errors are trapped without interrupting event ingestion or WAF operation. Passwords, auth tokens, and session secrets are scrubbed from decision logs and audit records.
 - **Real-Time SOC Streaming**: Multicasts `POLICY_DECISION` events over WebSocket (`/api/v1/ws/events`) to update the dashboard live.
 
+### 3.11 Adaptive Deception & Isolated Honeypot Subsystem (`services/deception/` & `services/api/deception/`) — Phase 8 Active
+- **Subsystem Purpose**: Implements the **Deceive** layer of the *Detect → Analyze → Decide → Deceive → Verify* pipeline. Safely diverts high-risk, automated attacks into a synthetic, observable sandbox to observe threat tactics without exposing real production assets.
+- **Strict Network & Sandbox Isolation**:
+  - Decoy container (`aegis-decoy`) runs exclusively on a dedicated internal Docker network (`deception-net`).
+  - Decoy has **0 network access** to the real application origin (`origin:8088`) or the production database (`db:5432`).
+  - Decoy exposes no public host port bindings (accessible exclusively via internal Deception Router).
+  - Decoy contains zero real credentials, API keys, or production data.
+- **Deception Routing Architecture**:
+  - `execute_deception_routing`: Accepts only trusted internal policy decisions (`decision == DECEIVE_ELIGIBLE`).
+  - Enforces Invariant 1 (WAF Terminal Drop): If `waf_blocked == True`, deception is strictly DENIED (`WAF_BLOCKED_TERMINAL`). Zero deception bypass.
+  - Generates unique deception session (`session_id = "ds-..."`) and calculates one-way privacy-preserving `source_identifier_hash`.
+  - Configurable TTL timeout: `DECEPTION_SESSION_TTL_SECONDS = 600` (10 minutes).
+  - Rate limiting: `MAX_REQUESTS_PER_SESSION = 50`, `MAX_BODY_SIZE_BYTES = 1 MB`.
+- **Synthetic Application Surface (`services/deception/`)**:
+  - `GET /`, `/robots.txt`, `/sitemap.xml`: Realistic synthetic corporate logistics portal.
+  - `GET /login`, `POST /login`: Fake employee authentication form. Always returns 401 with generic error envelope. Passwords are never stored, hashed for persistence, or reflected.
+  - `GET /admin`, `/admin/dashboard`, `/admin/users`, `/admin/settings`: Synthetic administrative consoles with fabricated KPI metrics and mock configurations.
+  - `GET /api/users`, `/api/products`, `/api/orders`, `/api/admin/stats`: Synthetic JSON datasets.
+- **Evidence Collection & Audit Timeline**:
+  - Captures sanitized metadata into PostgreSQL `deception_events` table (`DECEPTION_SESSION_STARTED`, `DECOY_LOGIN_ATTEMPT`, `DECOY_ADMIN_ACCESS`, `DECOY_API_ACCESS`, etc.).
+  - Passwords, authorization tokens, session cookies, and API keys are automatically scrubbed via regex redaction.
+- **Failure Safety (Invariant 5)**:
+  - `DECEPTION FAILURE != ORIGIN FALLBACK`: If the decoy container crashes or fails, the request is terminated with `DECEPTION_FAILED`. It **NEVER** silently falls back to the real origin.
+- **Real-Time SOC Streaming**:
+  - Multicasts `DECEPTION_EVENT` over WebSockets to update the interactive `DeceptionPanel.tsx` in real time.
+
 ---
 
 ## 4. Network Isolation Architecture
@@ -283,3 +309,4 @@ SOC Dashboard Live Telemetry
 | **8088** | **INTERNAL ONLY** | Protected Origin | Internal network `aegis-net`; totally inaccessible from outside |
 | **8000** | **INTERNAL ONLY** | API internal port | Ingress gateway proxies `/api/` to `api:8000` |
 | **5432** | **INTERNAL ONLY** | DB internal port | `db:5432` accessible only by API |
+| **8090** | **INTERNAL ONLY** | Decoy Honeypot (`decoy`) | Isolated network `deception-net`; inaccessible from host, origin, and db |

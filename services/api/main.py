@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from database import check_db_connection, init_db
-from routers import health, system, waf, events, risk, agent_shield, policy
+from routers import health, system, waf, events, risk, agent_shield, policy, deception
 from waf_log_watcher import start_waf_log_watcher
 
 logging.basicConfig(
@@ -56,6 +56,7 @@ app.include_router(events.router)
 app.include_router(risk.router)
 app.include_router(agent_shield.router)
 app.include_router(policy.router)
+app.include_router(deception.router)
 
 @app.get("/")
 def root():

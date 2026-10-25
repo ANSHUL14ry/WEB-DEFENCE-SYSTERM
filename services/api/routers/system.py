@@ -17,6 +17,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
     risk_assessments_count = 0
     agent_shield_assessments_count = 0
     policy_decisions_count = 0
+    deception_sessions_count = 0
     recent_events = []
     
     if db_ok:
@@ -38,6 +39,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
 
             res_policy = db.execute(text("SELECT COUNT(*) FROM policy_decisions")).scalar()
             policy_decisions_count = int(res_policy) if res_policy is not None else 0
+
+            res_deception = db.execute(text("SELECT COUNT(*) FROM deception_sessions")).scalar()
+            deception_sessions_count = int(res_deception) if res_deception is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -104,7 +108,13 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
                 "role": "Precedence-Based Security Decisions & Deception Qualification",
                 "version": "Phase 7 Active"
             },
-            "honeypot": {"status": "scheduled", "type": "Isolated Decoy Environment", "role": "Phase 8 Milestone"}
+            "deception_engine": {
+                "status": "operational",
+                "type": "Isolated Decoy Environment",
+                "role": "Adaptive Deception & Honeypot Routing",
+                "version": "Phase 8 Active"
+            },
+            "honeypot": {"status": "operational", "type": "Isolated Decoy Environment", "role": "Phase 8 Active"}
         },
         "metrics": {
             "system_events_count": events_count,
@@ -113,6 +123,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
             "risk_assessments_count": risk_assessments_count,
             "agent_shield_assessments_count": agent_shield_assessments_count,
             "policy_decisions_count": policy_decisions_count,
+            "deception_sessions_count": deception_sessions_count,
             "recent_events": recent_events
         }
     }

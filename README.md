@@ -7,6 +7,7 @@
 [![Phase 5 Status](https://img.shields.io/badge/Phase%205-Risk%20Engine%20Verified-emerald?style=flat-square)](.)
 [![Phase 6 Status](https://img.shields.io/badge/Phase%206-AgentShield%20Verified-emerald?style=flat-square)](.)
 [![Phase 7 Status](https://img.shields.io/badge/Phase%207-Policy%20Engine%20Verified-emerald?style=flat-square)](.)
+[![Phase 8 Status](https://img.shields.io/badge/Phase%208-Adaptive%20Deception%20Verified-emerald?style=flat-square)](.)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
@@ -246,7 +247,33 @@ Phase 7 implements the deterministic **Decision** layer of the *Detect → Analy
 
 ---
 
-## 9. Phase-by-Phase Roadmap
+## 9. Phase 8: Adaptive Deception & Isolated Honeypot
+
+Phase 8 implements the **Deceive** layer of the *Detect → Analyze → Decide → Deceive → Verify* pipeline:
+1. **Isolated Sandbox Decoy**:
+   - Container `aegis-decoy` runs on a dedicated, isolated internal Docker network (`deception-net`).
+   - Zero network routing to the real protected application (`origin:8088`) or PostgreSQL database (`db:5432`).
+   - Completely invisible to the public internet (no host port bindings).
+2. **Deterministic Deception Routing**:
+   - Only receives traffic when the backend Policy Engine determines `decision == DECEIVE_ELIGIBLE`.
+   - Never trusts client headers (e.g. `X-Deceive: true` is strictly ignored).
+   - Invariant 1 (WAF Terminal Drop): If `waf_blocked == True`, deception is strictly DENIED (`WAF_BLOCKED_TERMINAL`). Zero deception bypass.
+3. **Synthetic Application Surfaces**:
+   - `GET /`, `/robots.txt`, `/sitemap.xml`: Realistic corporate logistics portal.
+   - `GET /login`, `POST /login`: Fake employee authentication form. Passwords are never stored, hashed for persistence, or reflected.
+   - `GET /admin`, `/admin/dashboard`, `/admin/users`, `/admin/settings`: Synthetic administrative consoles with fabricated KPI metrics.
+   - `GET /api/users`, `/api/products`, `/api/orders`, `/api/admin/stats`: Synthetic JSON datasets.
+4. **Evidence Collection & Privacy Sanitization**:
+   - Observational telemetry recorded in PostgreSQL `deception_events` table.
+   - Passwords, authorization tokens, cookies, and API keys are automatically scrubbed via regex redaction.
+5. **Failure Safety (Invariant 5)**:
+   - `DECEPTION FAILURE != ORIGIN FALLBACK`: If the decoy service is unavailable, the session is terminated with `DECEPTION_FAILED`. Traffic **NEVER** silently falls back to the real origin.
+6. **Real-Time SOC Dashboard**:
+   - `DeceptionPanel.tsx` visualizes active deception sessions, interaction timelines, and captured evidence in real time.
+
+---
+
+## 10. Phase-by-Phase Roadmap
 
 - [x] **Phase 1: Foundation** (Docker Compose, Gateway, FastAPI, PostgreSQL, Origin, Dashboard Skeleton, Tests)
 - [x] **Phase 2: Gateway Hardening & Tracing** (Request ID validation, trace ID, JSON logs, security headers, limits, timeouts)
@@ -255,7 +282,7 @@ Phase 7 implements the deterministic **Decision** layer of the *Detect → Analy
 - [x] **Phase 5: Risk Engine** (Deterministic 0-100 scoring & signal weighting)
 - [x] **Phase 6: AgentShield** (Behavioral sequence analysis & agentic pattern detection)
 - [x] **Phase 7: Policy Engine** (Deterministic decision layer, terminal WAF invariant, deception qualification)
-- [ ] **Phase 8: Adaptive Honeypot** (Synthetic decoys: `/decoy-admin`, `/decoy-api`)
+- [x] **Phase 8: Adaptive Honeypot** (Synthetic decoys: `/decoy-admin`, `/decoy-api`, isolated Docker network)
 - [ ] **Phase 9: Response Verification** (Origin impact validation & verification receipts)
 - [ ] **Phase 10: SOC Dashboard Completion** (Threat feed, kill chain, deception panel)
 - [ ] **Phase 11: AI SOC Copilot** (Evidence-based plain English incident explainer)

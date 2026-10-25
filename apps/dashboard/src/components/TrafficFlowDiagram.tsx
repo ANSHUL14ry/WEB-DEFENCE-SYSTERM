@@ -10,7 +10,7 @@ export const TrafficFlowDiagram: React.FC = () => {
             AEGIS Ω Real Architecture & Packet Pipeline
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Phase 7 Active: Gateway &rarr; Coraza WAF (CRS v4) &rarr; Pipeline &rarr; AgentShield &rarr; Risk Engine &rarr; Deterministic Policy Engine (ALLOW, BLOCK, DECEIVE_ELIGIBLE)
+            Phase 8 Active: Gateway &rarr; Coraza WAF &rarr; AgentShield &rarr; Risk Engine &rarr; Policy Engine &rarr; Isolated Adaptive Decoy Honeypot (apex-logistics.demo)
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -64,10 +64,10 @@ export const TrafficFlowDiagram: React.FC = () => {
             <div className="text-[11px] font-semibold text-slate-200">Origin</div>
             <div className="text-[9px] font-mono text-emerald-400">PROTECTED</div>
           </div>
-          <div className="bg-soc-card p-2 rounded-lg border border-slate-800 opacity-50">
-            <Eye className="w-4 h-4 mx-auto text-purple-400 mb-1" />
-            <div className="text-[11px] font-semibold text-slate-400">Decoy</div>
-            <div className="text-[9px] font-mono text-slate-500">Phase 8</div>
+          <div className="bg-soc-card p-2 rounded-lg border border-purple-800/80 shadow-sm shadow-purple-950">
+            <Eye className="w-4 h-4 mx-auto text-purple-400 mb-1 animate-pulse" />
+            <div className="text-[11px] font-semibold text-purple-200">Decoy</div>
+            <div className="text-[9px] font-mono text-purple-400">ISOLATED ACTIVE</div>
           </div>
         </div>
       </div>

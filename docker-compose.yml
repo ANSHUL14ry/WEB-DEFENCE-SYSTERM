@@ -17,7 +17,8 @@ services:
       - ./database/migrations/04_risk_assessments.sql:/docker-entrypoint-initdb.d/04_risk_assessments.sql:ro
       - ./database/migrations/05_agent_shield.sql:/docker-entrypoint-initdb.d/05_agent_shield.sql:ro
       - ./database/migrations/06_policy_decisions.sql:/docker-entrypoint-initdb.d/06_policy_decisions.sql:ro
-      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/07_seed.sql:ro
+      - ./database/migrations/07_deception.sql:/docker-entrypoint-initdb.d/07_deception.sql:ro
+      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/08_seed.sql:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aegis_admin -d aegis_security_db"]
@@ -41,6 +42,7 @@ services:
       WAF_MODE: ${WAF_MODE:-BLOCK}
       CORAZA_AUDIT_LOG_PATH: /var/log/coraza/audit.log
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080}
+      DECOY_SERVICE_URL: ${DECOY_SERVICE_URL:-http://decoy:8090}
     ports:
       - "8001:8000"
     volumes:
@@ -50,6 +52,7 @@ services:
         condition: service_healthy
     networks:
       - aegis-net
+      - deception-net
 
   # 3. Temporary Protected Origin Service (Protected Application)
   origin:
@@ -118,6 +121,25 @@ services:
     networks:
       - aegis-net
 
+  # 7. Isolated Adaptive Decoy Honeypot (Phase 8)
+  decoy:
+    build:
+      context: ./services/deception
+      dockerfile: Dockerfile
+    container_name: aegis-decoy
+    restart: unless-stopped
+    environment:
+      PORT: "8090"
+      AEGIS_ENV: ${AEGIS_ENV:-isolated-decoy}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8090/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 3s
+      retries: 3
+    networks:
+      - deception-net
+
 volumes:
   pgdata:
     driver: local
@@ -127,4 +149,7 @@ volumes:
 networks:
   aegis-net:
     name: aegis-net
+    driver: bridge
+  deception-net:
+    name: deception-net
     driver: bridge

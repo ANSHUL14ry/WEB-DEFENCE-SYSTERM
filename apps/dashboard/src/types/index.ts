@@ -95,6 +95,7 @@ export interface SystemStatusData {
     risk_assessments_count?: number;
     agent_shield_assessments_count?: number;
     policy_decisions_count?: number;
+    deception_sessions_count?: number;
     recent_events: Array<{
       service_name: string;
       event_type: string;
@@ -182,5 +183,56 @@ export interface PolicyStats {
   contain_count: number;
   deceive_eligible_count: number;
   recent_decisions: PolicyDecisionRecord[];
+  disclaimer: string;
+}
+
+export interface DeceptionSession {
+  session_id: string;
+  request_id: string;
+  trace_id: string;
+  policy_decision_id?: string | null;
+  source_identifier_hash: string;
+  client_ip?: string | null;
+  initial_risk_score?: number | null;
+  initial_agent_shield_score?: number | null;
+  entry_reason?: string | null;
+  status: 'ACTIVE' | 'TERMINATED' | 'EXPIRED' | 'DENIED';
+  interaction_count: number;
+  evidence_count: number;
+  origin_reached: boolean;
+  started_at?: string | null;
+  ended_at?: string | null;
+  last_interaction_at?: string | null;
+  expires_at?: string | null;
+  created_at: string;
+}
+
+export interface DeceptionEvent {
+  event_id: string;
+  session_id: string;
+  request_id: string;
+  trace_id: string;
+  event_type: string;
+  route: string;
+  method: string;
+  source_identifier_hash?: string | null;
+  response_status: number;
+  endpoint_category?: string | null;
+  user_agent_classification?: string | null;
+  request_size: number;
+  risk_context?: Record<string, any>;
+  metadata?: Record<string, any>;
+  created_at: string;
+}
+
+export interface DeceptionStats {
+  total_sessions: number;
+  active_sessions: number;
+  terminated_sessions: number;
+  expired_sessions: number;
+  denied_sessions: number;
+  total_evidence_events: number;
+  recent_sessions: DeceptionSession[];
+  recent_events: DeceptionEvent[];
   disclaimer: string;
 }

@@ -6,6 +6,7 @@ import { TrafficFlowDiagram } from './components/TrafficFlowDiagram';
 import { RiskEnginePanel } from './components/RiskEnginePanel';
 import { AgentShieldPanel } from './components/AgentShieldPanel';
 import { PolicyEnginePanel } from './components/PolicyEnginePanel';
+import { DeceptionPanel } from './components/DeceptionPanel';
 import { SecurityEventsStream } from './components/SecurityEventsStream';
 import { SystemStatusData } from './types';
 import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert, Radio, Flame, Bot, Scale } from 'lucide-react';
@@ -191,6 +192,9 @@ export const App: React.FC = () => {
 
           {/* Deterministic Policy Engine Component (Phase 7) */}
           <PolicyEnginePanel apiBase={API_BASE} />
+
+          {/* Isolated Adaptive Deception & Honeypot (Phase 8) */}
+          <DeceptionPanel />
 
           {/* Explainable Risk Engine Component (Phase 5) */}
           <RiskEnginePanel apiBase={API_BASE} />
