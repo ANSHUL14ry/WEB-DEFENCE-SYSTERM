@@ -85,6 +85,7 @@ export interface SystemStatusData {
     pipeline?: ServiceStatus;
     agent_shield: ServiceStatus;
     risk_engine: ServiceStatus;
+    policy_engine?: ServiceStatus;
     honeypot: ServiceStatus;
   };
   metrics: {
@@ -93,6 +94,7 @@ export interface SystemStatusData {
     security_events_count?: number;
     risk_assessments_count?: number;
     agent_shield_assessments_count?: number;
+    policy_decisions_count?: number;
     recent_events: Array<{
       service_name: string;
       event_type: string;
@@ -144,5 +146,41 @@ export interface AgentShieldStats {
   medium_count: number;
   low_count: number;
   recent_assessments: AgentShieldAssessment[];
+  disclaimer: string;
+}
+
+export interface PolicyDecisionRecord {
+  decision_id: string;
+  event_id?: string | null;
+  request_id: string;
+  trace_id: string;
+  session_id?: string | null;
+  risk_assessment_id?: string | null;
+  agent_shield_assessment_id?: string | null;
+  risk_score?: number | null;
+  risk_severity?: string | null;
+  risk_confidence?: number | null;
+  agent_shield_score?: number | null;
+  agent_shield_severity?: string | null;
+  agent_shield_confidence?: number | null;
+  decision: 'ALLOW' | 'MONITOR' | 'RATE_LIMIT' | 'BLOCK' | 'CONTAIN' | 'DECEIVE_ELIGIBLE';
+  decision_reason: string;
+  reasons: string[];
+  matched_rules: string[];
+  terminal: boolean;
+  policy_version: string;
+  created_at: string;
+  timestamp?: string;
+}
+
+export interface PolicyStats {
+  total_decisions: number;
+  allow_count: number;
+  monitor_count: number;
+  rate_limit_count: number;
+  block_count: number;
+  contain_count: number;
+  deceive_eligible_count: number;
+  recent_decisions: PolicyDecisionRecord[];
   disclaimer: string;
 }

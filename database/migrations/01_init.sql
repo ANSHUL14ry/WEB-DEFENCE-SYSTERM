@@ -63,13 +63,27 @@ CREATE TABLE IF NOT EXISTS waf_events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. Policy Decisions
+-- 5. Policy Decisions (Deterministic Policy Engine Store)
 CREATE TABLE IF NOT EXISTS policy_decisions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    decision_id VARCHAR(64) PRIMARY KEY,
+    event_id VARCHAR(64),
     request_id VARCHAR(64) NOT NULL,
-    action VARCHAR(32) NOT NULL, -- ALLOW, BLOCK, CONTAIN_DECEIVE, RATE_LIMIT
-    reason TEXT NOT NULL,
-    applied_by VARCHAR(64) DEFAULT 'POLICY_ENGINE',
+    trace_id VARCHAR(64) NOT NULL,
+    session_id VARCHAR(64),
+    risk_assessment_id VARCHAR(64),
+    agent_shield_assessment_id VARCHAR(64),
+    risk_score INT,
+    risk_severity VARCHAR(32),
+    risk_confidence NUMERIC(4, 2),
+    agent_shield_score INT,
+    agent_shield_severity VARCHAR(32),
+    agent_shield_confidence NUMERIC(4, 2),
+    decision VARCHAR(32) NOT NULL,
+    decision_reason TEXT NOT NULL,
+    reasons JSONB DEFAULT '[]'::jsonb,
+    matched_rules JSONB DEFAULT '[]'::jsonb,
+    terminal BOOLEAN NOT NULL DEFAULT FALSE,
+    policy_version VARCHAR(32) NOT NULL DEFAULT 'policy-v1',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -145,6 +159,8 @@ CREATE TABLE IF NOT EXISTS agent_shield_assessments (
     engine_version VARCHAR(32) NOT NULL DEFAULT 'agentshield-v1',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_traffic_req_id ON traffic_logs(request_id);

@@ -16,6 +16,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
     security_events_count = 0
     risk_assessments_count = 0
     agent_shield_assessments_count = 0
+    policy_decisions_count = 0
     recent_events = []
     
     if db_ok:
@@ -34,6 +35,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
 
             res_as = db.execute(text("SELECT COUNT(*) FROM agent_shield_assessments")).scalar()
             agent_shield_assessments_count = int(res_as) if res_as is not None else 0
+
+            res_policy = db.execute(text("SELECT COUNT(*) FROM policy_decisions")).scalar()
+            policy_decisions_count = int(res_policy) if res_policy is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -94,6 +98,12 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
                 "role": "Deterministic Automation Indicators & Attack Progression Detection",
                 "version": "Phase 6 Active"
             },
+            "policy_engine": {
+                "status": "operational",
+                "type": "Deterministic Rule Evaluator",
+                "role": "Precedence-Based Security Decisions & Deception Qualification",
+                "version": "Phase 7 Active"
+            },
             "honeypot": {"status": "scheduled", "type": "Isolated Decoy Environment", "role": "Phase 8 Milestone"}
         },
         "metrics": {
@@ -102,6 +112,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
             "security_events_count": security_events_count,
             "risk_assessments_count": risk_assessments_count,
             "agent_shield_assessments_count": agent_shield_assessments_count,
+            "policy_decisions_count": policy_decisions_count,
             "recent_events": recent_events
         }
     }

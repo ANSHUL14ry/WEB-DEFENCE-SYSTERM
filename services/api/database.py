@@ -104,9 +104,40 @@ def init_db():
                 CREATE INDEX IF NOT EXISTS idx_as_severity ON agent_shield_assessments(severity);
                 CREATE INDEX IF NOT EXISTS idx_as_score ON agent_shield_assessments(agent_shield_score);
                 CREATE INDEX IF NOT EXISTS idx_as_created_at ON agent_shield_assessments(created_at DESC);
+
+                -- Phase 7: Policy decisions table
+                CREATE TABLE IF NOT EXISTS policy_decisions (
+                    decision_id VARCHAR(64) PRIMARY KEY,
+                    event_id VARCHAR(64),
+                    request_id VARCHAR(64) NOT NULL,
+                    trace_id VARCHAR(64) NOT NULL,
+                    session_id VARCHAR(64),
+                    risk_assessment_id VARCHAR(64),
+                    agent_shield_assessment_id VARCHAR(64),
+                    risk_score INT,
+                    risk_severity VARCHAR(32),
+                    risk_confidence NUMERIC(4, 2),
+                    agent_shield_score INT,
+                    agent_shield_severity VARCHAR(32),
+                    agent_shield_confidence NUMERIC(4, 2),
+                    decision VARCHAR(32) NOT NULL,
+                    decision_reason TEXT NOT NULL,
+                    reasons JSONB DEFAULT '[]'::jsonb,
+                    matched_rules JSONB DEFAULT '[]'::jsonb,
+                    terminal BOOLEAN NOT NULL DEFAULT FALSE,
+                    policy_version VARCHAR(32) NOT NULL DEFAULT 'policy-v1',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_pd_req_id ON policy_decisions(request_id);
+                CREATE INDEX IF NOT EXISTS idx_pd_trace_id ON policy_decisions(trace_id);
+                CREATE INDEX IF NOT EXISTS idx_pd_decision ON policy_decisions(decision);
+                CREATE INDEX IF NOT EXISTS idx_pd_risk_sev ON policy_decisions(risk_severity);
+                CREATE INDEX IF NOT EXISTS idx_pd_as_sev ON policy_decisions(agent_shield_severity);
+                CREATE INDEX IF NOT EXISTS idx_pd_created_at ON policy_decisions(created_at DESC);
             """))
             conn.commit()
-            logger.info("Security events, risk assessments, and AgentShield tables and indexes verified.")
+            logger.info("Security events, risk assessments, AgentShield, and Policy Decisions tables and indexes verified.")
     except Exception as e:
         logger.error(f"Failed to initialize database tables: {e}")
 

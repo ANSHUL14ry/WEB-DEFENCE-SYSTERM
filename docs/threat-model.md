@@ -43,6 +43,12 @@ All attack simulation tools provided within this platform operate strictly in sa
 - **Structural Parameter Privacy:** Parameter manipulation indicators evaluate structural keys only; actual parameter values (passwords, tokens, cookies, queries) are never stored in behavioral evidence.
 - **Subsystem Isolation:** Failure within the behavioral analyzer is safely caught and logged. Neither WAF blocking, security event persistence, nor overall platform operation can be disrupted by AgentShield errors.
 
+### 3.2 Policy Engine Invariants & Zero Deception Bypass
+- **Terminal WAF Drop Invariant:** Any transaction dropped by the Coraza WAF (`waf_blocked == True` or `waf_action == BLOCK`) is strictly terminal. The Policy Engine enforces `BLOCK` (`RULE_1_WAF_TERMINAL_BLOCK`, `terminal = True`). It can NEVER be overridden to `DECEIVE_ELIGIBLE`, `CONTAIN`, or `ALLOW`.
+- **Zero Deception Bypass:** Deception eligibility (`DECEIVE_ELIGIBLE`) is reserved exclusively for requests that have passed through the WAF inspection without being dropped, and demonstrate both high security risk and high-confidence behavioral automation. WAF-blocked attacks cannot be routed to decoys or allowed through.
+- **Fail-Safe Conservative Fallback:** Incomplete, missing, or corrupt telemetry contexts never default to `ALLOW`. They conservatively default to `MONITOR` (`RULE_7_CONSERVATIVE_FALLBACK`).
+- **Phase 7 Scope Boundary:** The Policy Engine in Phase 7 is solely a decision qualification layer. No honeypots, decoy redirects, or active deception mechanisms are executed in Phase 7.
+
 ---
 
 ## 4. Deception Isolation & Sandbox Principles

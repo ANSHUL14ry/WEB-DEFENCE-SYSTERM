@@ -6,6 +6,7 @@
 [![Phase 4 Status](https://img.shields.io/badge/Phase%204-Security%20Pipeline%20Verified-emerald?style=flat-square)](.)
 [![Phase 5 Status](https://img.shields.io/badge/Phase%205-Risk%20Engine%20Verified-emerald?style=flat-square)](.)
 [![Phase 6 Status](https://img.shields.io/badge/Phase%206-AgentShield%20Verified-emerald?style=flat-square)](.)
+[![Phase 7 Status](https://img.shields.io/badge/Phase%207-Policy%20Engine%20Verified-emerald?style=flat-square)](.)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
@@ -223,7 +224,29 @@ Phase 6 introduces AgentShield, a deterministic behavioral analysis engine that 
 
 ---
 
-## 8. Phase-by-Phase Roadmap
+## 8. Phase 7: Deterministic Policy Engine (Decision Layer)
+
+Phase 7 implements the deterministic **Decision** layer of the *Detect → Analyze → Decide → Deceive → Verify* pipeline:
+1. **Scope Boundaries**: Phase 7 is solely the decision qualification layer (`ALLOW`, `MONITOR`, `RATE_LIMIT`, `BLOCK`, `DECEIVE_ELIGIBLE`). Zero honeypots or decoy redirects are executed in Phase 7 (scheduled for Phase 8).
+2. **Mandatory WAF Safety Invariant**:
+   - If a transaction was dropped by Coraza WAF (`waf_blocked == True` or `waf_action == BLOCK`), the decision is **strictly terminal** (`decision = BLOCK`, `terminal = True`, rule `RULE_1_WAF_TERMINAL_BLOCK`).
+   - Under NO circumstances can a WAF-blocked request be converted to `DECEIVE_ELIGIBLE`, `CONTAIN`, or `ALLOW`. Zero deception bypass.
+3. **Deterministic Precedence Rules**:
+   - `RULE_1_WAF_TERMINAL_BLOCK`: WAF block -> `BLOCK` (`terminal = True`).
+   - `RULE_2_DECEPTION_ELIGIBILITY`: High/Critical Risk + High/Critical AgentShield + NOT WAF Blocked -> `DECEIVE_ELIGIBLE` (`terminal = False`, qualifies for Phase 8 decoy).
+   - `RULE_3_CRITICAL_SECURITY_BLOCK`: Critical Risk -> `BLOCK` (`terminal = True`).
+   - `RULE_4_HIGH_RISK_BLOCK`: High Risk without AgentShield -> `BLOCK` (`terminal = True`).
+   - `RULE_5_MEDIUM_RISK`: Medium Risk -> `RATE_LIMIT` (if burst velocity / repeated probing observed) or `MONITOR` (`terminal = False`).
+   - `RULE_6_LOW_RISK_ALLOW`: Low Risk -> `ALLOW` (`terminal = False`).
+   - `RULE_7_CONSERVATIVE_FALLBACK`: Missing/unknown data -> `MONITOR` (never defaults unverified traffic to ALLOW).
+4. **Relational Persistence & Auditing**:
+   - Persisted in PostgreSQL table `policy_decisions` (`decision_id`, `request_id`, `trace_id`, `decision`, `risk_score`, `agent_shield_score`, `matched_rules` JSONB, `terminal`, `policy_version: "policy-v1"`).
+5. **Real-Time SOC Streaming**:
+   - Multicasts `POLICY_DECISION` packets over WebSockets to the SOC Dashboard's interactive Policy Engine Panel.
+
+---
+
+## 9. Phase-by-Phase Roadmap
 
 - [x] **Phase 1: Foundation** (Docker Compose, Gateway, FastAPI, PostgreSQL, Origin, Dashboard Skeleton, Tests)
 - [x] **Phase 2: Gateway Hardening & Tracing** (Request ID validation, trace ID, JSON logs, security headers, limits, timeouts)
@@ -231,7 +254,7 @@ Phase 6 introduces AgentShield, a deterministic behavioral analysis engine that 
 - [x] **Phase 4: Event Pipeline** (Unified security event pipeline, deduplication, correlation, WebSocket streaming, SOC feed)
 - [x] **Phase 5: Risk Engine** (Deterministic 0-100 scoring & signal weighting)
 - [x] **Phase 6: AgentShield** (Behavioral sequence analysis & agentic pattern detection)
-- [ ] **Phase 7: Policy Engine** (ALLOW, BLOCK, CONTAIN + DECEIVE policies)
+- [x] **Phase 7: Policy Engine** (Deterministic decision layer, terminal WAF invariant, deception qualification)
 - [ ] **Phase 8: Adaptive Honeypot** (Synthetic decoys: `/decoy-admin`, `/decoy-api`)
 - [ ] **Phase 9: Response Verification** (Origin impact validation & verification receipts)
 - [ ] **Phase 10: SOC Dashboard Completion** (Threat feed, kill chain, deception panel)

@@ -5,9 +5,10 @@ import { SystemHealthCard } from './components/SystemHealthCard';
 import { TrafficFlowDiagram } from './components/TrafficFlowDiagram';
 import { RiskEnginePanel } from './components/RiskEnginePanel';
 import { AgentShieldPanel } from './components/AgentShieldPanel';
+import { PolicyEnginePanel } from './components/PolicyEnginePanel';
 import { SecurityEventsStream } from './components/SecurityEventsStream';
 import { SystemStatusData } from './types';
-import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert, Radio, Flame, Bot } from 'lucide-react';
+import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert, Radio, Flame, Bot, Scale } from 'lucide-react';
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? `http://${window.location.hostname}:8001`
@@ -153,6 +154,21 @@ export const App: React.FC = () => {
 
             <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
               <div>
+                <span className="text-slate-400 text-[11px] font-mono uppercase">POLICY DECISIONS</span>
+                <div className="text-xl font-bold font-mono text-purple-400 mt-0.5">
+                  {systemData?.metrics.policy_decisions_count ?? 0}
+                </div>
+                <span className="text-[10px] text-purple-300 font-mono">
+                  Deterministic Rules
+                </span>
+              </div>
+              <div className="p-2.5 bg-purple-950 rounded-lg border border-purple-800">
+                <Scale className="w-5 h-5 text-purple-400" />
+              </div>
+            </div>
+
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
+              <div>
                 <span className="text-slate-400 text-[11px] font-mono uppercase">DATABASE STATE</span>
                 <div className="text-xl font-bold font-mono text-white mt-0.5">
                   {systemData?.services.database.status === 'connected' ? 'CONNECTED' : 'STANDBY'}
@@ -172,6 +188,9 @@ export const App: React.FC = () => {
 
           {/* AgentShield Behavioral Automation Engine Component (Phase 6) */}
           <AgentShieldPanel apiBase={API_BASE} />
+
+          {/* Deterministic Policy Engine Component (Phase 7) */}
+          <PolicyEnginePanel apiBase={API_BASE} />
 
           {/* Explainable Risk Engine Component (Phase 5) */}
           <RiskEnginePanel apiBase={API_BASE} />

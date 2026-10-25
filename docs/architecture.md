@@ -251,6 +251,24 @@ SOC Dashboard Live Telemetry
 - **Failure Safety**: Analysis errors are trapped and logged safely: WAF blocking, security event persistence, and Risk Engine evaluations proceed without interruption.
 - **Future Integration Point**: Provides behavioral classification for Policy Engine dynamic routing (ALLOW, BLOCK, DECEIVE) in Phase 7.
 
+### 3.10 Deterministic Policy Engine (`services/api/policy_engine/`) — Phase 7 Active
+- **Subsystem Purpose**: Implements the deterministic **Decision** layer within the *Detect → Analyze → Decide → Deceive → Verify* pipeline.
+- **Strict Scope Boundaries**: Phase 7 is solely the decision qualification layer. It outputs `DECEIVE_ELIGIBLE` for high-risk automated attacks. **Zero honeypot containers, decoy redirects, or active deception mechanisms are executed in Phase 7** (Phase 8 milestone).
+- **Mandatory WAF Safety Invariant**:
+  - If a transaction was dropped by Coraza WAF (`waf_blocked == True` or `waf_action == BLOCK`), the decision is **strictly terminal** (`decision = BLOCK`, `terminal = True`, rule `RULE_1_WAF_TERMINAL_BLOCK`).
+  - Under NO circumstances can a WAF-dropped request be converted to `DECEIVE_ELIGIBLE`, `CONTAIN`, or `ALLOW`. Zero deception bypass.
+- **Ordered Rule Precedence Architecture**:
+  1. `RULE_1_WAF_TERMINAL_BLOCK`: Ingress drop by WAF -> `BLOCK` (`terminal = True`).
+  2. `RULE_2_DECEPTION_ELIGIBILITY`: `risk_severity in (HIGH, CRITICAL)` AND `agent_shield_severity in (HIGH, CRITICAL)` AND NOT `waf_blocked` -> `DECEIVE_ELIGIBLE` (`terminal = False`, qualifies for Phase 8 decoy).
+  3. `RULE_3_CRITICAL_SECURITY_BLOCK`: `risk_severity == CRITICAL` -> `BLOCK` (`terminal = True`).
+  4. `RULE_4_HIGH_RISK_BLOCK`: `risk_severity == HIGH` without sufficient AgentShield automation -> `BLOCK` (`terminal = True`).
+  5. `RULE_5_MEDIUM_RISK`: `risk_severity == MEDIUM` -> `RATE_LIMIT` (if burst velocity / repeated probing observed) or `MONITOR` (`terminal = False`).
+  6. `RULE_6_LOW_RISK_ALLOW`: `risk_severity == LOW` -> `ALLOW` (`terminal = False`).
+  7. `RULE_7_CONSERVATIVE_FALLBACK`: Missing or unknown context -> `MONITOR` (never defaults unverified traffic to ALLOW).
+- **Persistence (`policy_decisions`)**: Relational PostgreSQL store recording `decision_id`, `request_id`, `trace_id`, `decision`, `risk_score`, `agent_shield_score`, `matched_rules` JSONB, `terminal` flag, `policy_version: "policy-v1"`, and timestamps.
+- **Failure Safety & Data Sanitization**: Policy evaluation errors are trapped without interrupting event ingestion or WAF operation. Passwords, auth tokens, and session secrets are scrubbed from decision logs and audit records.
+- **Real-Time SOC Streaming**: Multicasts `POLICY_DECISION` events over WebSocket (`/api/v1/ws/events`) to update the dashboard live.
+
 ---
 
 ## 4. Network Isolation Architecture

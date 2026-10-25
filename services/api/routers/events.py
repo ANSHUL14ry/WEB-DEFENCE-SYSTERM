@@ -25,6 +25,7 @@ from models.events import (
 from broadcaster import broadcaster
 from risk_engine.service import assess_event_risk
 from agent_shield.service import assess_event_behavior
+from policy_engine.service import evaluate_and_record_policy
 
 logger = logging.getLogger("aegis.event_pipeline")
 
@@ -165,6 +166,7 @@ async def ingest_security_event(event: SecurityEventCreate, db: Session = Depend
                 logger.error(f"Automatic AgentShield analysis failed (failure-safe): {as_err}")
 
             # Phase 5: Automatic Risk Engine Evaluation (Failure-Safe, consuming AgentShield)
+            risk_assessment = None
             try:
                 risk_assessment = assess_event_risk(normalized_event, db, agent_shield_data=as_assessment)
                 if risk_assessment:
@@ -183,6 +185,36 @@ async def ingest_security_event(event: SecurityEventCreate, db: Session = Depend
                     await broadcaster.broadcast(risk_update)
             except Exception as risk_err:
                 logger.error(f"Automatic risk evaluation failed (failure-safe): {risk_err}")
+
+            # Phase 7: Automatic Policy Engine Evaluation (Failure-Safe)
+            try:
+                policy_dec = evaluate_and_record_policy(
+                    normalized_event,
+                    db,
+                    risk_data=risk_assessment,
+                    agent_shield_data=as_assessment
+                )
+                if policy_dec:
+                    policy_broadcast = {
+                        "event_type": "POLICY_DECISION",
+                        "decision_id": policy_dec["decision_id"],
+                        "request_id": policy_dec["request_id"],
+                        "trace_id": policy_dec["trace_id"],
+                        "decision": policy_dec["decision"],
+                        "decision_reason": policy_dec["decision_reason"],
+                        "reasons": policy_dec["reasons"],
+                        "matched_rules": policy_dec["matched_rules"],
+                        "risk_score": policy_dec.get("risk_score"),
+                        "risk_severity": policy_dec.get("risk_severity"),
+                        "agent_shield_score": policy_dec.get("agent_shield_score"),
+                        "agent_shield_severity": policy_dec.get("agent_shield_severity"),
+                        "terminal": policy_dec["terminal"],
+                        "policy_version": policy_dec["policy_version"],
+                        "timestamp": policy_dec.get("created_at")
+                    }
+                    await broadcaster.broadcast(policy_broadcast)
+            except Exception as policy_err:
+                logger.error(f"Automatic policy evaluation failed (failure-safe): {policy_err}")
 
             return {"status": "ingested", "event_id": event_id, "is_new": True}
         else:
