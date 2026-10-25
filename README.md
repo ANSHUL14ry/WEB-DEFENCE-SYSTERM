@@ -1,6 +1,7 @@
 # AEGIS Ω — AI Adaptive Web Defense & Deception Platform
 
 [![Phase 1 Status](https://img.shields.io/badge/Phase%201-Foundation%20Verified-emerald?style=flat-square)](.)
+[![Phase 2 Status](https://img.shields.io/badge/Phase%202-Gateway%20Hardening-emerald?style=flat-square)](.)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
@@ -16,7 +17,7 @@ AEGIS Ω is an adaptive, application-layer cyber defense platform that integrate
 - [Docker](https://www.docker.com/) & Docker Compose v2+
 - Python 3.12+ (for running test harnesses)
 
-### Launching AEGIS Ω (Phase 1)
+### Launching AEGIS Ω
 ```bash
 # 1. Clone & enter repository
 git clone <repo-url>
@@ -33,15 +34,15 @@ docker compose ps
 ```
 
 ### Accessing Services
-| Service | URL / Port | Role |
-|---|---|---|
-| **AEGIS Gateway Ingress** | `http://localhost:8080/` | Main entrypoint for all web traffic |
-| **Gateway Health Probe** | `http://localhost:8080/healthz` | Native ingress health probe |
-| **Gateway API Route** | `http://localhost:8080/api/v1/health` | Proxied API route via Gateway |
-| **SOC Defense Dashboard** | `http://localhost:3000/` | Cyber Command SOC console |
-| **Control Plane API** | `http://localhost:8001/` | REST API & System Telemetry |
-| **PostgreSQL Database** | `localhost:5433` (Internal: `db:5432`) | State & Event Store |
-| **Protected Origin** | *Internal Only* (`origin:8088`) | Upstream protected application |
+| Service | URL / Port | Role | Accessibility |
+|---|---|---|---|
+| **AEGIS Gateway Ingress** | `http://localhost:8080/` | Main entrypoint for all web traffic | **Public / Host** |
+| **Gateway Health Probe** | `http://localhost:8080/healthz` | Native ingress health probe | **Public / Host** |
+| **Gateway API Route** | `http://localhost:8080/api/v1/health` | Proxied API route via Gateway | **Public / Host** |
+| **SOC Defense Dashboard** | `http://localhost:3000/` | Cyber Command SOC console | **Public / Host** |
+| **Control Plane API** | `http://localhost:8001/` | REST API & System Telemetry | **Host (Dev Only)** |
+| **PostgreSQL Database** | `localhost:5433` (Internal: `db:5432`) | State & Event Store | **Host (Dev Only)** |
+| **Protected Origin** | `origin:8088` | Upstream protected application | **Internal Only (`aegis-net`)** |
 
 ---
 
@@ -69,23 +70,33 @@ flowchart TD
 
 ---
 
-## 3. Phase 1 Verification Proof
+## 3. Phase 2: Gateway Hardening & Request Tracing
 
-Phase 1 provides a fully working, reproducible foundation with:
-1. **AEGIS Ingress Gateway (`gateway/nginx`)**: Reverse proxies traffic, injects unique `X-Request-ID` headers into all requests, logs structured JSON metrics.
-2. **Control Plane API (`services/api`)**: FastAPI backend with active PostgreSQL connection pool, health endpoints (`/health`, `/api/v1/health`), and microservice status registry (`/api/v1/system/status`).
-3. **Database (`database/`)**: PostgreSQL 16 container with initialized tables for sessions, traffic logs, WAF events, policy actions, and mitigation receipts.
-4. **Temporary Origin (`services/origin`)**: Lightweight internal service proving real traffic flow from Gateway to protected backend.
-5. **SOC Dashboard (`apps/dashboard`)**: Professional dark cybersecurity UI in React 18, Vite, TypeScript, and Tailwind CSS.
-6. **Docker Network Isolation**: Internal `aegis-net` network prevents direct public access to database and origin.
+Phase 2 establishes a hardened, observable ingress layer:
+1. **Request ID Validation & Normalization**:
+   - Every request is assigned a unique `X-Request-ID`.
+   - Client-provided IDs are validated via regex `^[a-zA-Z0-9_\-]{8,64}$`. Malformed IDs (such as XSS or path traversal attempts) are rejected and replaced by a fresh 32-character hexadecimal UUID.
+2. **Trace ID Chain Linkage**:
+   - `X-Trace-ID` links requests belonging to the same workflow or multi-step execution.
+3. **Structured JSON Access Logging**:
+   - Gateway logs strictly in JSON (`timestamp`, `request_id`, `trace_id`, `method`, `uri`, `status`, `request_time`, `upstream_response_time`, etc.).
+   - Prevents credential leakage by logging normalized paths rather than raw query strings with sensitive secrets.
+4. **Defensive Security Headers**:
+   - `X-Content-Type-Options: nosniff`
+   - `X-Frame-Options: SAMEORIGIN`
+   - `Referrer-Policy: strict-origin-when-cross-origin`
+   - `Permissions-Policy: geolocation=(), camera=(), microphone=()`
+   - `Content-Security-Policy: default-src 'self' ...`
+   - `X-Protected-By: AEGIS-Omega-Gateway`
+5. **Request Limits & Controlled Errors**:
+   - Client body size limit enforced at 10MB (payload > 10MB returns clean HTTP 413 JSON).
+   - Unsupported HTTP verbs return controlled HTTP 405 Method Not Allowed JSON responses.
+   - Upstream failures (502/503/504) return structured JSON errors rather than raw Docker stack traces.
 
 ### Running Automated Tests
 ```bash
-# Install test requirements
-pip install -r tests/requirements.txt
-
-# Run Phase 1 integration tests
-pytest tests/
+# Run all Phase 1 and Phase 2 integration tests
+pytest tests/ -v
 ```
 
 ---
@@ -93,7 +104,7 @@ pytest tests/
 ## 4. Phase-by-Phase Roadmap
 
 - [x] **Phase 1: Foundation** (Docker Compose, Gateway, FastAPI, PostgreSQL, Origin, Dashboard Skeleton, Tests)
-- [ ] **Phase 2: Gateway Hardening** (JSON Access logs, rate limiting, request tracing)
+- [x] **Phase 2: Gateway Hardening & Tracing** (Request ID validation, trace ID, JSON logs, security headers, limits, timeouts)
 - [ ] **Phase 3: Real WAF** (Coraza engine + OWASP CRS integration)
 - [ ] **Phase 4: Event Pipeline** (WAF and traffic log ingestion into PostgreSQL)
 - [ ] **Phase 5: Risk Engine** (Deterministic 0-100 scoring & signal weighting)

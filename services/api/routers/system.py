@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Dict, Any
@@ -9,7 +9,7 @@ import datetime
 router = APIRouter(prefix="/api/v1/system", tags=["System"])
 
 @router.get("/status")
-def get_system_status(db: Session = Depends(get_db)) -> Dict[str, Any]:
+def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[str, Any]:
     db_ok = check_db_connection()
     events_count = 0
     recent_events = []
@@ -32,7 +32,7 @@ def get_system_status(db: Session = Depends(get_db)) -> Dict[str, Any]:
                     "details": row[3],
                     "created_at": row[4].isoformat() if row[4] else None
                 })
-        except Exception as e:
+        except Exception:
             pass
 
     return {
@@ -40,9 +40,16 @@ def get_system_status(db: Session = Depends(get_db)) -> Dict[str, Any]:
         "platform": "AEGIS Ω",
         "tagline": "Detect. Predict. Deceive. Contain.",
         "version": settings.AEGIS_VERSION,
+        "request_id": request.headers.get("x-request-id", "none"),
+        "trace_id": request.headers.get("x-trace-id", "none"),
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "services": {
-            "gateway": {"status": "operational", "type": "Nginx Reverse Proxy", "role": "Traffic Ingress & Header Tagging"},
+            "gateway": {
+                "status": "operational",
+                "type": "Nginx Ingress Gateway",
+                "role": "Hardened Reverse Proxy, Tracing, Security Headers & Structured Logs",
+                "version": "Phase 2 Active"
+            },
             "database": {"status": "connected" if db_ok else "degraded", "type": "PostgreSQL", "role": "State & Telemetry Store"},
             "api": {"status": "healthy", "type": "FastAPI Core", "role": "Control Plane & REST API"},
             "origin": {"status": "reachable", "type": "Protected Application", "role": "Upstream Workload"},
