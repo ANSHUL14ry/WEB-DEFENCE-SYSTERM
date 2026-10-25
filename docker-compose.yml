@@ -1,0 +1,94 @@
+services:
+  # 1. PostgreSQL Telemetry & State Store
+  db:
+    image: postgres:16-alpine
+    container_name: aegis-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aegis_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aegis_secure_hackathon_pass_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-aegis_security_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./database/migrations/01_init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis_admin -d aegis_security_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aegis-net
+
+  # 2. Control Plane & Backend API
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: aegis-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-aegis_admin}:${POSTGRES_PASSWORD:-aegis_secure_hackathon_pass_2026}@db:5432/${POSTGRES_DB:-aegis_security_db}
+      AEGIS_ENV: ${AEGIS_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080}
+    ports:
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - aegis-net
+
+  # 3. Temporary Protected Origin Service (Demonstrating Ingress & Protection)
+  origin:
+    build:
+      context: ./services/origin
+      dockerfile: Dockerfile
+    container_name: aegis-origin
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  # 4. AEGIS Ingress Gateway (Reverse Proxy & Header Tagging)
+  gateway:
+    build:
+      context: ./gateway/nginx
+      dockerfile: Dockerfile
+    container_name: aegis-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      origin:
+        condition: service_healthy
+    networks:
+      - aegis-net
+
+  # 5. SOC Defense Dashboard
+  dashboard:
+    build:
+      context: ./apps/dashboard
+      dockerfile: Dockerfile
+    container_name: aegis-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    networks:
+      - aegis-net
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  aegis-net:
+    name: aegis-net
+    driver: bridge
