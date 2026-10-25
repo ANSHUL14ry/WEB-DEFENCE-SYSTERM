@@ -8,6 +8,7 @@ import { AgentShieldPanel } from './components/AgentShieldPanel';
 import { PolicyEnginePanel } from './components/PolicyEnginePanel';
 import { DeceptionPanel } from './components/DeceptionPanel';
 import { VerificationPanel } from './components/VerificationPanel';
+import { AttackerIntelligencePanel } from './components/AttackerIntelligencePanel';
 import { AttackStoryVisualizer } from './components/AttackStoryVisualizer';
 import { SecurityEventsStream } from './components/SecurityEventsStream';
 import { SystemStatusData } from './types';
@@ -23,7 +24,8 @@ import {
   EyeOff, 
   CheckCircle2, 
   Crosshair, 
-  ArrowRight
+  ArrowRight,
+  Compass
 } from 'lucide-react';
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -169,8 +171,8 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* 8 Real Backend Metrics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+              {/* 9 Real Backend Metrics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-3">
                 <div className="bg-soc-panel border border-soc-border rounded-xl p-3 flex flex-col justify-between">
                   <div>
                     <span className="text-slate-400 text-[10px] font-mono uppercase">GATEWAY INGRESS</span>
@@ -272,6 +274,22 @@ export const App: React.FC = () => {
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   </div>
                 </div>
+
+                <div 
+                  onClick={() => setCurrentTab('intelligence')}
+                  className="bg-soc-panel border border-cyan-900/80 bg-cyan-950/20 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-cyan-500 transition-all"
+                >
+                  <div>
+                    <span className="text-cyan-400 text-[10px] font-mono uppercase">ATTACKER INTEL</span>
+                    <div className="text-lg font-bold font-mono text-cyan-300 mt-0.5">
+                      {systemData?.metrics.source_profiles_count ?? 0}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-cyan-900/60">
+                    <span className="text-[10px] text-cyan-400 font-mono">MITRE &amp; GeoIP</span>
+                    <Compass className="w-4 h-4 text-cyan-400" />
+                  </div>
+                </div>
               </div>
 
               {/* Traffic Flow Pipeline Component */}
@@ -309,6 +327,23 @@ export const App: React.FC = () => {
                   </button>
                 </div>
                 <VerificationPanel apiBase={API_BASE} realtimeEvent={lastWsEvent} />
+              </div>
+
+              {/* Attacker Intelligence & Threat Context Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs uppercase font-mono tracking-wider font-semibold text-slate-300 flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-cyan-400" />
+                    Attacker Intelligence, Threat Context &amp; MITRE Mapping (Phase 10)
+                  </h3>
+                  <button 
+                    onClick={() => setCurrentTab('intelligence')}
+                    className="text-xs font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                  >
+                    Open Intelligence Console <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+                <AttackerIntelligencePanel apiBase={API_BASE} realtimeEvent={lastWsEvent} />
               </div>
 
               {/* Microservices Matrix */}
@@ -438,6 +473,13 @@ export const App: React.FC = () => {
           {currentTab === 'verification' && (
             <div className="space-y-4">
               <VerificationPanel apiBase={API_BASE} realtimeEvent={lastWsEvent} />
+            </div>
+          )}
+
+          {/* ATTACKER INTELLIGENCE TAB */}
+          {currentTab === 'intelligence' && (
+            <div className="space-y-4">
+              <AttackerIntelligencePanel apiBase={API_BASE} realtimeEvent={lastWsEvent} />
             </div>
           )}
 

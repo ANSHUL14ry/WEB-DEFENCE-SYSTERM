@@ -20,6 +20,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
     deception_sessions_count = 0
     verifications_count = 0
     verified_mitigations_count = 0
+    source_profiles_count = 0
+    mitre_mappings_count = 0
+    network_observations_count = 0
     recent_events = []
     
     if db_ok:
@@ -50,6 +53,15 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
 
             res_ver_ok = db.execute(text("SELECT COUNT(*) FROM verification_results WHERE result = 'VERIFIED'")).scalar()
             verified_mitigations_count = int(res_ver_ok) if res_ver_ok is not None else 0
+
+            res_sp = db.execute(text("SELECT COUNT(*) FROM source_profiles")).scalar()
+            source_profiles_count = int(res_sp) if res_sp is not None else 0
+
+            res_mm = db.execute(text("SELECT COUNT(*) FROM mitre_mappings")).scalar()
+            mitre_mappings_count = int(res_mm) if res_mm is not None else 0
+
+            res_no = db.execute(text("SELECT COUNT(*) FROM network_observations")).scalar()
+            network_observations_count = int(res_no) if res_no is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -128,6 +140,12 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
                 "role": "Deterministic Mitigation Verification & Origin Protection Proof",
                 "version": "Phase 9 Active"
             },
+            "threat_intel": {
+                "status": "operational",
+                "type": "Attacker Intelligence & Threat Context Engine",
+                "role": "GeoIP, ASN, Reputation, Client Fingerprinting & MITRE Mapping",
+                "version": "Phase 10 Active"
+            },
             "honeypot": {"status": "operational", "type": "Isolated Decoy Environment", "role": "Phase 8 Active"}
         },
         "metrics": {
@@ -140,6 +158,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
             "deception_sessions_count": deception_sessions_count,
             "verifications_count": verifications_count,
             "verified_mitigations_count": verified_mitigations_count,
+            "source_profiles_count": source_profiles_count,
+            "mitre_mappings_count": mitre_mappings_count,
+            "network_observations_count": network_observations_count,
             "recent_events": recent_events
         }
     }

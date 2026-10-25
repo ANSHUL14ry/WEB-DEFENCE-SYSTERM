@@ -8,7 +8,8 @@ import {
   Bot, 
   Layers, 
   Flame, 
-  Scale
+  Scale,
+  Compass
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
     { id: 'policy', label: 'Deterministic Policy', icon: Scale, phase: 'Phase 7' },
     { id: 'deception', label: 'Decoy / Honeypot', icon: EyeOff, phase: 'Phase 8' },
     { id: 'verification', label: 'Mitigation Proof', icon: CheckCircle2, phase: 'Phase 9' },
+    { id: 'intelligence', label: 'Attacker Intelligence', icon: Compass, phase: 'Phase 10' },
     { id: 'architecture', label: 'Architecture & Topology', icon: Layers, phase: 'Active' },
   ];
 

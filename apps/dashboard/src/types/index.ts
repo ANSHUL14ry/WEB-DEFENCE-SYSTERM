@@ -88,6 +88,7 @@ export interface SystemStatusData {
     policy_engine?: ServiceStatus;
     deception_engine?: ServiceStatus;
     verification_engine?: ServiceStatus;
+    threat_intel?: ServiceStatus;
     honeypot: ServiceStatus;
   };
   metrics: {
@@ -100,6 +101,9 @@ export interface SystemStatusData {
     deception_sessions_count?: number;
     verifications_count?: number;
     verified_mitigations_count?: number;
+    source_profiles_count?: number;
+    mitre_mappings_count?: number;
+    network_observations_count?: number;
     recent_events: Array<{
       service_name: string;
       event_type: string;
@@ -272,4 +276,64 @@ export interface VerificationStats {
   verified_percentage: number;
   recent_verifications: VerificationResultRecord[];
   disclaimer: string;
+}
+
+export interface MitreMappingRecord {
+  mapping_id: string;
+  technique_id: string;
+  technique_name: string;
+  tactic: string;
+  evidence_event_ids: string[];
+  confidence: number;
+  reason: string;
+  request_id?: string | null;
+  trace_id?: string | null;
+  source_ip?: string | null;
+  created_at: string;
+}
+
+export interface NetworkObservationRecord {
+  observation_id: string;
+  sensor: string;
+  event_type: string;
+  source_ip: string;
+  destination_ip?: string | null;
+  destination_port?: number | null;
+  protocol?: string | null;
+  ports_observed?: string | null;
+  connection_count: number;
+  scan_indicator?: string | null;
+  confidence: number;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface SourceProfileRecord {
+  source_ip: string;
+  client_fingerprint?: string | null;
+  user_agent?: string | null;
+  is_private: boolean;
+  country?: string | null;
+  country_code?: string | null;
+  region?: string | null;
+  city?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string | null;
+  asn?: string | null;
+  organization?: string | null;
+  isp?: string | null;
+  first_seen: string;
+  last_seen: string;
+  request_count: number;
+  session_count?: number;
+  reputation_status: string;
+  reputation_provider?: string | null;
+  reputation_checked_at?: string | null;
+  mitre_mappings?: MitreMappingRecord[];
+  observed_behaviors?: string[];
+  defense_status?: string;
+  latest_risk_score?: number | null;
+  latest_agentshield_score?: number | null;
+  latest_policy_decision?: string | null;
 }

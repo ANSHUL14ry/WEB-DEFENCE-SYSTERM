@@ -26,6 +26,7 @@ from broadcaster import broadcaster
 from risk_engine.service import assess_event_risk
 from agent_shield.service import assess_event_behavior
 from policy_engine.service import evaluate_and_record_policy
+from enrichment.service import enrich_security_event
 
 logger = logging.getLogger("aegis.event_pipeline")
 
@@ -215,6 +216,18 @@ async def ingest_security_event(event: SecurityEventCreate, db: Session = Depend
                     await broadcaster.broadcast(policy_broadcast)
             except Exception as policy_err:
                 logger.error(f"Automatic policy evaluation failed (failure-safe): {policy_err}")
+
+            # Phase 10: Automatic Attacker Intelligence & Threat Context Enrichment (Failure-Safe)
+            try:
+                await enrich_security_event(
+                    normalized_event,
+                    db,
+                    risk_assessment=risk_assessment,
+                    agent_shield=as_assessment,
+                    policy_decision=policy_dec if 'policy_dec' in locals() else None
+                )
+            except Exception as enrich_err:
+                logger.error(f"Automatic enrichment failed (failure-safe): {enrich_err}")
 
             return {"status": "ingested", "event_id": event_id, "is_new": True}
         else:

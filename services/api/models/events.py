@@ -26,12 +26,17 @@ class EventType(str, Enum):
     ORIGIN_REQUEST = "ORIGIN_REQUEST"
     SYSTEM_EVENT = "SYSTEM_EVENT"
     
-    # Reserved Future Event Types (Phases 5-9)
+    # Reserved Event Types (Phases 5-10)
     AGENTSHIELD_SIGNAL = "AGENTSHIELD_SIGNAL"
     RISK_SCORE_UPDATE = "RISK_SCORE_UPDATE"
     POLICY_DECISION = "POLICY_DECISION"
     DECEPTION_EVENT = "DECEPTION_EVENT"
     MITIGATION_EVENT = "MITIGATION_EVENT"
+    NETWORK_RECON_DETECTED = "NETWORK_RECON_DETECTED"
+    THREAT_INTELLIGENCE_UPDATE = "THREAT_INTELLIGENCE_UPDATE"
+    SOURCE_ENRICHED = "SOURCE_ENRICHED"
+    MITRE_TECHNIQUE_MAPPED = "MITRE_TECHNIQUE_MAPPED"
+    REPUTATION_UPDATED = "REPUTATION_UPDATED"
 
 
 class EventAction(str, Enum):
@@ -129,6 +134,7 @@ class SecurityEventCreate(BaseModel):
     component: str = EventComponent.SYSTEM.value
     status: str = EventStatus.DETECTED.value
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    enrichment: Optional[Dict[str, Any]] = Field(default=None)
 
     @field_validator("event_type")
     @classmethod
@@ -188,4 +194,5 @@ class SecurityEventResponse(BaseModel):
     component: str
     status: str
     metadata: Dict[str, Any]
+    enrichment: Optional[Dict[str, Any]] = None
     created_at: str
