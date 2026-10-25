@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
-from database import check_db_connection
-from routers import health, system, waf
+from database import check_db_connection, init_db
+from routers import health, system, waf, events
 from waf_log_watcher import start_waf_log_watcher
 
 logging.basicConfig(
@@ -20,6 +20,7 @@ async def lifespan(app: FastAPI):
     db_ok = check_db_connection()
     if db_ok:
         logger.info("PostgreSQL database connection verified.")
+        init_db()
     else:
         logger.warning("PostgreSQL database is currently unavailable or initializing.")
         
@@ -51,6 +52,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(system.router)
 app.include_router(waf.router)
+app.include_router(events.router)
 
 @app.get("/")
 def root():

@@ -1,5 +1,8 @@
 import logging
 import asyncio
+import time
+import json
+import urllib.request
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any, List, Optional
@@ -11,10 +14,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger("aegis.origin")
 
+def send_origin_telemetry_sync(payload: dict):
+    """Deliver telemetry payload to internal AEGIS API."""
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            "http://api:8000/api/v1/internal/events",
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=1.0) as resp:
+            pass
+    except Exception:
+        # Non-blocking telemetry; never interrupt origin processing
+        pass
+
+async def emit_origin_telemetry(payload: dict):
+    await asyncio.to_thread(send_origin_telemetry_sync, payload)
+
 app = FastAPI(
     title="AEGIS Protected Origin Application",
     description="Simulated origin application workload sitting safely behind AEGIS Gateway and Coraza WAF",
-    version="0.3.0"
+    version="0.4.0"
 )
 
 # Enable CORS on origin
@@ -41,9 +63,11 @@ async def log_and_track_incoming_requests(request: Request, call_next):
     req_id = request.headers.get("x-request-id", "none")
     trace_id = request.headers.get("x-trace-id", "none")
     client_ip = request.client.host if request.client else "unknown"
+    start_time = time.time()
     
     # Track request internally for verification
-    if not request.url.path.startswith("/health") and not request.url.path.startswith("/stats"):
+    is_telemetry_endpoint = request.url.path.startswith("/health") or request.url.path.startswith("/stats") or request.url.path.startswith("/reset-stats")
+    if not is_telemetry_endpoint:
         REQUEST_LOG.append({
             "request_id": req_id,
             "trace_id": trace_id,
@@ -55,7 +79,28 @@ async def log_and_track_incoming_requests(request: Request, call_next):
     
     logger.info(f"Incoming: {request.method} {request.url.path} | Client: {client_ip} | X-Request-ID: {req_id} | X-Trace-ID: {trace_id}")
     response = await call_next(request)
+    duration_ms = (time.time() - start_time) * 1000.0
     logger.info(f"Response: {response.status_code} for {request.method} {request.url.path} | X-Request-ID: {req_id}")
+
+    # Emit normalized ORIGIN_REQUEST event to security event pipeline for legitimate non-internal requests
+    if not is_telemetry_endpoint and req_id != "none":
+        telemetry_payload = {
+            "event_type": "ORIGIN_REQUEST",
+            "request_id": req_id,
+            "trace_id": trace_id if trace_id != "none" else f"trace-{req_id}",
+            "severity": "INFO",
+            "action": "ALLOW",
+            "component": "origin",
+            "status": "ALLOWED",
+            "source": {"ip": client_ip},
+            "request": {"method": request.method, "uri": request.url.path},
+            "metadata": {
+                "response_status": response.status_code,
+                "processing_time_ms": round(duration_ms, 2)
+            }
+        }
+        asyncio.create_task(emit_origin_telemetry(telemetry_payload))
+
     return response
 
 @app.api_route("/health", methods=["GET", "HEAD"])

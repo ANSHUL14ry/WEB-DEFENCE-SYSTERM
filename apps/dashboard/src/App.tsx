@@ -3,8 +3,9 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { SystemHealthCard } from './components/SystemHealthCard';
 import { TrafficFlowDiagram } from './components/TrafficFlowDiagram';
+import { SecurityEventsStream } from './components/SecurityEventsStream';
 import { SystemStatusData } from './types';
-import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert, Radio } from 'lucide-react';
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? `http://${window.location.hostname}:8001`
@@ -105,6 +106,21 @@ export const App: React.FC = () => {
 
             <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
               <div>
+                <span className="text-slate-400 text-xs font-mono">EVENT PIPELINE</span>
+                <div className="text-xl font-bold font-mono text-cyan-400 mt-1">
+                  {systemData?.metrics.security_events_count ?? 0}
+                </div>
+                <span className="text-[10px] text-cyan-300 font-mono">
+                  Normalized & Correlated
+                </span>
+              </div>
+              <div className="p-3 bg-cyan-950 rounded-lg border border-cyan-800">
+                <Radio className="w-5 h-5 text-cyan-400" />
+              </div>
+            </div>
+
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
+              <div>
                 <span className="text-slate-400 text-xs font-mono">DATABASE STATE</span>
                 <div className="text-xl font-bold font-mono text-white mt-1">
                   {systemData?.services.database.status === 'connected' ? 'CONNECTED' : 'STANDBY'}
@@ -117,21 +133,13 @@ export const App: React.FC = () => {
                 <Database className="w-5 h-5 text-slate-300" />
               </div>
             </div>
-
-            <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
-              <div>
-                <span className="text-slate-400 text-xs font-mono">LAST TELEMETRY SYNC</span>
-                <div className="text-xl font-bold font-mono text-cyan-400 mt-1">{lastSynced}</div>
-                <span className="text-[10px] text-slate-400 font-mono">Auto-polling: 8s</span>
-              </div>
-              <div className="p-3 bg-indigo-950 rounded-lg border border-indigo-800">
-                <Layers className="w-5 h-5 text-indigo-400" />
-              </div>
-            </div>
           </div>
 
           {/* Traffic Flow Pipeline Component */}
           <TrafficFlowDiagram />
+
+          {/* Real-time Security Events Pipeline & Telemetry Stream (Phase 4) */}
+          <SecurityEventsStream apiBase={API_BASE} />
 
           {/* System Services Matrix */}
           <div>

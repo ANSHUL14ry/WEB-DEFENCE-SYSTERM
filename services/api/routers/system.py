@@ -13,6 +13,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
     db_ok = check_db_connection()
     events_count = 0
     waf_events_count = 0
+    security_events_count = 0
     recent_events = []
     
     if db_ok:
@@ -22,6 +23,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
 
             res_waf = db.execute(text("SELECT COUNT(*) FROM waf_events")).scalar()
             waf_events_count = int(res_waf) if res_waf is not None else 0
+
+            res_sec = db.execute(text("SELECT COUNT(*) FROM security_events")).scalar()
+            security_events_count = int(res_sec) if res_sec is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -64,6 +68,12 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
                 "mode": settings.WAF_MODE,
                 "version": "Phase 3 Active"
             },
+            "pipeline": {
+                "status": "operational",
+                "type": "Security Event Engine & WebSocket Broadcaster",
+                "role": "Event Ingestion, Deduplication, Correlation & Live Streaming",
+                "version": "Phase 4 Active"
+            },
             "agent_shield": {"status": "scheduled", "type": "Behavioral Engine", "role": "Phase 6 Milestone"},
             "risk_engine": {"status": "scheduled", "type": "Deterministic Scorer", "role": "Phase 5 Milestone"},
             "honeypot": {"status": "scheduled", "type": "Isolated Decoy Environment", "role": "Phase 8 Milestone"}
@@ -71,6 +81,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
         "metrics": {
             "system_events_count": events_count,
             "waf_events_count": waf_events_count,
+            "security_events_count": security_events_count,
             "recent_events": recent_events
         }
     }

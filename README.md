@@ -3,6 +3,7 @@
 [![Phase 1 Status](https://img.shields.io/badge/Phase%201-Foundation%20Verified-emerald?style=flat-square)](.)
 [![Phase 2 Status](https://img.shields.io/badge/Phase%202-Gateway%20Hardening-emerald?style=flat-square)](.)
 [![Phase 3 Status](https://img.shields.io/badge/Phase%203-Real%20WAF%20Verified-emerald?style=flat-square)](.)
+[![Phase 4 Status](https://img.shields.io/badge/Phase%204-Security%20Pipeline%20Verified-emerald?style=flat-square)](.)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
@@ -96,7 +97,7 @@ Phase 2 establishes a hardened, observable ingress layer:
 
 ### Running Automated Tests
 ```bash
-# Run all Phase 1, Phase 2, and Phase 3 integration and unit tests (28 tests)
+# Run all Phase 1, Phase 2, Phase 3, and Phase 4 integration and unit tests (40 tests)
 pytest tests/ -v
 ```
 
@@ -132,12 +133,33 @@ Phase 3 integrates an industrial-grade Web Application Firewall inspecting appli
 
 ---
 
-## 5. Phase-by-Phase Roadmap
+## 5. Phase 4: Security Event Pipeline & Real-Time Telemetry
+
+Phase 4 establishes an enterprise security telemetry and correlation pipeline connecting Gateway, WAF, and Origin directly to the SOC Dashboard:
+1. **Pipeline Architecture**:
+   ```
+   Client ──> AEGIS Gateway ──> Coraza WAF ──> Security Event Pipeline ──> PostgreSQL ──> WebSocket ──> SOC Dashboard
+   ```
+2. **Unified Event Model**:
+   - Standardized typed JSON envelope (`models/events.py`) covering `event_id`, `event_type`, `timestamp`, `request_id`, `trace_id`, `severity`, `action`, `component`, `status`, and `metadata`.
+   - Clear event taxonomy: `GATEWAY_REQUEST`, `WAF_DETECTION`, `WAF_BLOCK`, `ORIGIN_REQUEST`, `SYSTEM_EVENT`.
+3. **Deduplication & Correlation**:
+   - Deterministic hashing signatures prevent duplicate event creation when log watchers restart.
+   - `request_id` links multi-component actions for individual transactions; `trace_id` links multi-request workflows.
+4. **Real-Time Streaming**:
+   - WebSocket broadcast (`/api/v1/ws/events`) streams live alerts to the SOC Dashboard with zero page reloads.
+   - Live event investigation modal enables operators to inspect CRS rule matches, anomaly scores, and verify origin protection.
+5. **Data Protection & Sanitization**:
+   - Automated recursive sanitization redacts sensitive credentials, tokens, authorization headers, and secret URL query parameters.
+
+---
+
+## 6. Phase-by-Phase Roadmap
 
 - [x] **Phase 1: Foundation** (Docker Compose, Gateway, FastAPI, PostgreSQL, Origin, Dashboard Skeleton, Tests)
 - [x] **Phase 2: Gateway Hardening & Tracing** (Request ID validation, trace ID, JSON logs, security headers, limits, timeouts)
 - [x] **Phase 3: Real WAF** (Coraza engine v3 + OWASP CRS v4 integration, origin isolation, telemetry ingestion)
-- [ ] **Phase 4: Event Pipeline** (WAF and traffic log ingestion into PostgreSQL)
+- [x] **Phase 4: Event Pipeline** (Unified security event pipeline, deduplication, correlation, WebSocket streaming, SOC feed)
 - [ ] **Phase 5: Risk Engine** (Deterministic 0-100 scoring & signal weighting)
 - [ ] **Phase 6: AgentShield** (Behavioral sequence analysis & agentic pattern detection)
 - [ ] **Phase 7: Policy Engine** (ALLOW, BLOCK, CONTAIN + DECEIVE policies)

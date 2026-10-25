@@ -31,8 +31,9 @@ All attack simulation tools provided within this platform operate strictly in sa
 ---
 
 ## 3. Data Sanitization & Credential Protection
-- **No Password / Secret Logging:** Access logs and WAF event stores strip and redact sensitive parameters (passwords, tokens, authorization headers).
-- **Safe URI Logging:** Gateway logs normalized URI paths without query parameters to prevent leakage of credentials passed via URL.
+- **No Password / Secret Logging:** Access logs and WAF event stores strip and redact sensitive parameters (passwords, tokens, authorization headers, API keys).
+- **Safe URI Logging:** Gateway and event normalizers sanitize raw query strings to prevent leakage of credentials passed via URL (`(?i)(password|token|secret|key)=...`).
+- **Telemetry Integrity:** Internal event ingestion endpoints enforce strict schema validation. Untrusted client claims regarding severity, action, or component status are never accepted without system verification.
 
 ---
 

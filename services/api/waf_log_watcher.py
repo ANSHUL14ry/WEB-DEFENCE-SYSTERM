@@ -1,12 +1,16 @@
 import asyncio
+import hashlib
 import json
 import logging
 import os
 import re
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from sqlalchemy import text
 from database import SessionLocal
 from config import settings
+from models.events import map_waf_severity, sanitize_value
+from broadcaster import broadcaster
 
 logger = logging.getLogger("aegis.waf_watcher")
 
@@ -116,10 +120,35 @@ async def start_waf_log_watcher():
                         if parsed["anomaly_score"] > anomaly_score:
                             anomaly_score = parsed["anomaly_score"]
 
-                    # Persist normalized event into PostgreSQL
+                    # Extract user agent if available
+                    user_agent_header = headers.get("user-agent")
+                    user_agent = None
+                    if user_agent_header:
+                        user_agent = user_agent_header[0] if isinstance(user_agent_header, list) else str(user_agent_header)
+
+                    # Compute deterministic event_id for Phase 4 deduplication
+                    # Signature: request_id + primary_rule_id
+                    raw_sig = f"{request_id}:{primary_rule_id}:{action}"
+                    sec_event_id = hashlib.sha256(raw_sig.encode()).hexdigest()[:32]
+                    mapped_sev = map_waf_severity(primary_severity)
+                    sec_event_type = "WAF_BLOCK" if action == "BLOCK" else "WAF_DETECTION"
+                    sec_status = "BLOCKED" if action == "BLOCK" else "DETECTED"
+                    sanitized_uri = sanitize_value(uri)
+
+                    sec_metadata = {
+                        "rule_id": primary_rule_id,
+                        "rule_message": primary_message,
+                        "anomaly_score": anomaly_score,
+                        "matched_data": sanitize_value(matched_data),
+                        "engine": "coraza-v3",
+                        "crs_ruleset": "OWASP_CRS_v4.30.0"
+                    }
+
+                    # Persist events into PostgreSQL
                     db = SessionLocal()
                     try:
-                        insert_sql = text("""
+                        # 1. Specialized WAF event store (Phase 3 compatibility)
+                        insert_waf_sql = text("""
                             INSERT INTO waf_events (
                                 request_id, trace_id, action, severity_label, rule_id,
                                 rule_message, engine, http_method, uri, client_ip,
@@ -130,7 +159,7 @@ async def start_waf_log_watcher():
                                 :anomaly_score, :matched_data, CAST(:raw_details AS jsonb), CURRENT_TIMESTAMP
                             )
                         """)
-                        db.execute(insert_sql, {
+                        db.execute(insert_waf_sql, {
                             "request_id": request_id,
                             "trace_id": trace_id,
                             "action": action,
@@ -145,8 +174,61 @@ async def start_waf_log_watcher():
                             "matched_data": matched_data,
                             "raw_details": json.dumps(event_data)
                         })
+
+                        # 2. Normalized Security Events Store (Phase 4 Pipeline)
+                        # Deduplication via ON CONFLICT (event_id) DO NOTHING
+                        insert_sec_sql = text("""
+                            INSERT INTO security_events (
+                                event_id, event_type, timestamp, request_id, trace_id,
+                                session_id, severity, action, component, status,
+                                source_ip, user_agent, method, uri, metadata, created_at
+                            ) VALUES (
+                                :event_id, :event_type, CURRENT_TIMESTAMP, :request_id, :trace_id,
+                                NULL, :severity, :action, 'coraza', :status,
+                                :source_ip, :user_agent, :method, :uri, CAST(:metadata AS jsonb), CURRENT_TIMESTAMP
+                            )
+                            ON CONFLICT (event_id) DO NOTHING
+                            RETURNING event_id;
+                        """)
+                        result = db.execute(insert_sec_sql, {
+                            "event_id": sec_event_id,
+                            "event_type": sec_event_type,
+                            "request_id": request_id,
+                            "trace_id": trace_id,
+                            "severity": mapped_sev,
+                            "action": action,
+                            "status": sec_status,
+                            "source_ip": client_ip,
+                            "user_agent": user_agent,
+                            "method": method,
+                            "uri": sanitized_uri,
+                            "metadata": json.dumps(sec_metadata)
+                        })
                         db.commit()
+
+                        is_new_sec_event = result.fetchone() is not None
                         logger.info(f"Ingested Coraza WAF event: {request_id} | Rule {primary_rule_id}: {primary_message} | Action: {action}")
+
+                        # Broadcast live via WebSocket if new
+                        if is_new_sec_event:
+                            normalized_broadcast = {
+                                "event_id": sec_event_id,
+                                "event_type": sec_event_type,
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "request_id": request_id,
+                                "trace_id": trace_id,
+                                "session_id": None,
+                                "source": {"ip": client_ip, "user_agent": user_agent},
+                                "request": {"method": method, "uri": sanitized_uri},
+                                "severity": mapped_sev,
+                                "action": action,
+                                "component": "coraza",
+                                "status": sec_status,
+                                "metadata": sec_metadata,
+                                "created_at": datetime.now(timezone.utc).isoformat()
+                            }
+                            await broadcaster.broadcast(normalized_broadcast)
+
                     except Exception as db_err:
                         db.rollback()
                         logger.error(f"Failed to persist WAF audit log to DB: {db_err}")

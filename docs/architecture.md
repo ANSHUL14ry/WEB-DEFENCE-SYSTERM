@@ -89,11 +89,28 @@ Coraza JSON Audit Log (/var/log/coraza/audit.log)
   ↓
 Async Log Watcher Worker (FastAPI)
   ↓
-Internal Ingestion API (/api/v1/internal/waf/events)
+Internal Ingestion API (/api/v1/internal/events)
   ↓
-PostgreSQL Database (`waf_events` table)
+PostgreSQL Database (`security_events` & `waf_events`)
+  ↓
+Real-Time WebSocket Broadcast (`/api/v1/ws/events`)
   ↓
 SOC Dashboard Live Telemetry
+```
+
+### 2.3 End-to-End Pipeline Dataflow
+```
+Client
+  ↓
+AEGIS Gateway
+  ↓
+Coraza WAF
+  ↓
+Security Event Pipeline
+  ↓
+PostgreSQL Database
+  ↓
+Real-Time SOC Dashboard
 ```
 
 ---
@@ -154,6 +171,19 @@ SOC Dashboard Live Telemetry
 ### 3.6 SOC Dashboard (`apps/dashboard`)
 - React 18, TypeScript, Tailwind CSS, Vite.
 - Dark SOC theme inspired by enterprise cyber command centers with live WAF operational status indicators.
+- **Live Security Telemetry Feed**: Real-time WebSocket connection streaming security events directly to the browser with zero manual polling.
+- **Investigation Drawer**: Allows operators to drill down into structured event payloads, OWASP CRS rule IDs, anomaly scores, and verify origin protection.
+
+### 3.7 Security Event Pipeline & Real-Time Telemetry (`services/api`) — Phase 4 Active
+- **Unified Event Taxonomy**: Standardized envelope for `GATEWAY_REQUEST`, `WAF_DETECTION`, `WAF_BLOCK`, `ORIGIN_REQUEST`, and `SYSTEM_EVENT`.
+- **Deduplication Engine**: Uses deterministic hashing signatures (`sha256(request_id:component:rule:action)`) combined with PostgreSQL `ON CONFLICT (event_id) DO NOTHING` to guarantee zero duplicate alerts upon log watcher restarts.
+- **Multi-Level Correlation**:
+  - `request_id`: Correlates gateway entrance, WAF inspection, and origin receipt for an individual HTTP transaction.
+  - `trace_id`: Correlates multi-step request chains, foundational for future AgentShield velocity and path progression analysis.
+  - `session_id`: Structured placeholder for future behavioral session clustering.
+- **Automated Credential Sanitization**: Recursively redacts passwords, tokens, API keys, and authorization secrets from both metadata payloads and URI query parameters.
+- **Real-Time WebSocket Broadcaster (`broadcaster.py`)**: Asynchronously multicasts newly ingested security events to all connected SOC dashboard clients.
+- **Database Model (`security_events`)**: Persistent relational table indexed by timestamp, identifiers, severity, and event type.
 
 ---
 

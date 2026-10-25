@@ -13,7 +13,8 @@ services:
     volumes:
       - ./database/migrations/01_init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
       - ./database/migrations/02_waf_events.sql:/docker-entrypoint-initdb.d/02_waf_events.sql:ro
-      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/03_seed.sql:ro
+      - ./database/migrations/03_security_events.sql:/docker-entrypoint-initdb.d/03_security_events.sql:ro
+      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/04_seed.sql:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aegis_admin -d aegis_security_db"]

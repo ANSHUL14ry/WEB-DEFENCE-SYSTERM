@@ -12,7 +12,7 @@ Demonstrate real-time adaptive defense, automated behavioral detection (AgentShi
 2. Open Gateway Ingress: `http://localhost:8080/`
 3. Result: Normal user is permitted, dashboard shows `ALLOW`, request ID generated, origin receives request.
 
-### Act 2: Real WAF Threat Interception & Origin Protection (0:30 - 1:15)
+### Act 2: Real WAF Threat Interception & Real-Time Telemetry (0:30 - 1:15)
 1. Send controlled web attack requests through AEGIS Gateway:
    - **SQL Injection:** `GET http://localhost:8080/products?category=%27%20OR%201=1--`
    - **Cross-Site Scripting:** `GET http://localhost:8080/products?q=%3Cscript%3Ealert(1)%3C/script%3E`
@@ -21,8 +21,10 @@ Demonstrate real-time adaptive defense, automated behavioral detection (AgentShi
    - Gateway returns HTTP 403 Forbidden with non-leaking JSON envelope.
    - Coraza WAF triggers OWASP CRS rules (e.g. 942100, 941100, 930110).
    - In-memory origin tracking confirms: **0 requests reached the origin application**.
-   - Audit log watcher streams detection into PostgreSQL `waf_events` table.
-   - SOC Dashboard displays real WAF operational status and live threat events.
+   - Audit log watcher tails Coraza audit JSON in real time.
+   - Event pipeline normalizes event, computes deduplication signature, and stores in PostgreSQL `security_events`.
+   - WebSocket broadcaster streams event live to SOC Dashboard without page reload!
+   - Operator clicks event in SOC Dashboard to inspect structured details, rule ID, and verify "Origin Reached: NO".
 
 ### Act 3: Recon & Automated Attack Simulation (1:15 - 1:45)
 1. Trigger safe automated attack sequence:
