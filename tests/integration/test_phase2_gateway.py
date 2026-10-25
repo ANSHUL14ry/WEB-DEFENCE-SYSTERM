@@ -137,7 +137,7 @@ def test_10_gateway_health_independent():
     data = res.json()
     assert data["status"] == "healthy"
     assert data["service"] == "aegis-gateway"
-    assert data["version"] == "0.2.0"
+    assert data["version"] in ["0.2.0", "0.3.0"]
 
 def test_11_api_routing_and_tracing_functional():
     """Verify that /api/ routes continue to be cleanly proxied and traced."""

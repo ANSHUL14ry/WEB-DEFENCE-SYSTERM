@@ -1,7 +1,11 @@
-# AEGIS Ω — Web Application Firewall (WAF)
+# AEGIS Ω — Web Application Firewall (Coraza + OWASP CRS)
 
-## Overview
-WAF integration with Coraza and OWASP Core Rule Set (CRS).
+## Operational Status: PHASE 3 ACTIVE
+The WAF layer sits directly between the AEGIS Ingress Gateway and upstream backends.
 
-## Milestones
-- **Phase 3**: Coraza WAF Engine + OWASP CRS rule set integration & event extraction
+## Components:
+- **Engine**: Coraza WAF v3
+- **Ruleset**: OWASP Core Rule Set (CRS) v4.30.0
+- **Service Container**: `aegis-waf`
+- **Internal Port**: `8080` (network: `aegis-net`)
+- **Upstream Target**: `http://origin:8088`

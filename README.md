@@ -2,6 +2,7 @@
 
 [![Phase 1 Status](https://img.shields.io/badge/Phase%201-Foundation%20Verified-emerald?style=flat-square)](.)
 [![Phase 2 Status](https://img.shields.io/badge/Phase%202-Gateway%20Hardening-emerald?style=flat-square)](.)
+[![Phase 3 Status](https://img.shields.io/badge/Phase%203-Real%20WAF%20Verified-emerald?style=flat-square)](.)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
@@ -95,17 +96,47 @@ Phase 2 establishes a hardened, observable ingress layer:
 
 ### Running Automated Tests
 ```bash
-# Run all Phase 1 and Phase 2 integration tests
+# Run all Phase 1, Phase 2, and Phase 3 integration and unit tests (28 tests)
 pytest tests/ -v
 ```
 
 ---
 
-## 4. Phase-by-Phase Roadmap
+## 4. Phase 3: Real Web Application Firewall (Coraza + OWASP CRS)
+
+Phase 3 integrates an industrial-grade Web Application Firewall inspecting application-layer payloads before traffic ever reaches the origin:
+1. **Coraza + CRS Engine**:
+   - OWASP Coraza WAF v3.2.2 on Caddy v2.11.4 (`ghcr.io/coreruleset/coraza-crs:caddy-alpine`).
+   - OWASP Core Rule Set (CRS) v4.30.0 providing deterministic threat signatures for SQLi, XSS, Path Traversal, and RCE.
+2. **Defensive Traffic Flow**:
+   ```
+   Client ──> AEGIS Gateway (:8080) ──> Coraza WAF (Caddy) ──> OWASP CRS ──> Origin (:8088)
+   ```
+3. **Attack Detection & Interception**:
+   - When CRS rules match malicious input, Coraza blocks with HTTP 403 Forbidden.
+   - Nginx intercepts the 403 via `proxy_intercept_errors` and returns a non-leaking, secure JSON error:
+     ```json
+     {
+       "error": "request_blocked",
+       "status": 403,
+       "message": "Request blocked by AEGIS Web Application Firewall",
+       "request_id": "019a2b3c4d5e6f7a8b9c0d1e2f3a4b5c",
+       "trace_id": "019a2b3c4d5e6f7a8b9c0d1e2f3a4b5c"
+     }
+     ```
+   - **Origin Isolation**: Verified by in-memory origin telemetry; blocked requests are completely stopped before reaching the upstream application.
+4. **Real-Time Telemetry Watcher**:
+   - Coraza writes structured JSON audit logs to `/var/log/coraza/audit.log`.
+   - FastAPI asynchronous background watcher (`waf_log_watcher.py`) tails this log in real time and ingests events into PostgreSQL (`waf_events` table).
+   - SOC Dashboard exposes real-time operational status and metrics.
+
+---
+
+## 5. Phase-by-Phase Roadmap
 
 - [x] **Phase 1: Foundation** (Docker Compose, Gateway, FastAPI, PostgreSQL, Origin, Dashboard Skeleton, Tests)
 - [x] **Phase 2: Gateway Hardening & Tracing** (Request ID validation, trace ID, JSON logs, security headers, limits, timeouts)
-- [ ] **Phase 3: Real WAF** (Coraza engine + OWASP CRS integration)
+- [x] **Phase 3: Real WAF** (Coraza engine v3 + OWASP CRS v4 integration, origin isolation, telemetry ingestion)
 - [ ] **Phase 4: Event Pipeline** (WAF and traffic log ingestion into PostgreSQL)
 - [ ] **Phase 5: Risk Engine** (Deterministic 0-100 scoring & signal weighting)
 - [ ] **Phase 6: AgentShield** (Behavioral sequence analysis & agentic pattern detection)

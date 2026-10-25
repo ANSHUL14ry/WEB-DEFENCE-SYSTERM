@@ -1,10 +1,12 @@
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from database import check_db_connection
-from routers import health, system
+from routers import health, system, waf
+from waf_log_watcher import start_waf_log_watcher
 
 logging.basicConfig(
     level=settings.LOG_LEVEL,
@@ -20,8 +22,14 @@ async def lifespan(app: FastAPI):
         logger.info("PostgreSQL database connection verified.")
     else:
         logger.warning("PostgreSQL database is currently unavailable or initializing.")
+        
+    # Start Coraza WAF audit log watcher background task
+    watcher_task = asyncio.create_task(start_waf_log_watcher())
+    
     yield
+    
     logger.info("Shutting down AEGIS Ω Control Plane API.")
+    watcher_task.cancel()
 
 app = FastAPI(
     title="AEGIS Ω Control Plane API",
@@ -42,6 +50,7 @@ app.add_middleware(
 # Register routers
 app.include_router(health.router)
 app.include_router(system.router)
+app.include_router(waf.router)
 
 @app.get("/")
 def root():

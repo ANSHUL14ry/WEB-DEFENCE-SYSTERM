@@ -1,5 +1,5 @@
 -- AEGIS Ω Database Schema Initialization
--- Version: 0.1.0
+-- Version: 0.3.0
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -42,22 +42,31 @@ CREATE TABLE IF NOT EXISTS traffic_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. WAF Events
+-- 4. WAF Events (Dedicated Security Event Store)
 CREATE TABLE IF NOT EXISTS waf_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    request_id VARCHAR(64) REFERENCES traffic_logs(request_id) ON DELETE CASCADE,
+    request_id VARCHAR(64) NOT NULL,
+    trace_id VARCHAR(64),
+    action VARCHAR(32) DEFAULT 'BLOCK',
+    severity_label VARCHAR(32) DEFAULT 'CRITICAL',
     rule_id INT NOT NULL,
     rule_tag VARCHAR(128),
     rule_message TEXT,
     severity INT DEFAULT 0,
+    engine VARCHAR(64) DEFAULT 'coraza-v3',
+    http_method VARCHAR(16),
+    uri TEXT,
+    client_ip VARCHAR(64),
+    anomaly_score INT DEFAULT 0,
     matched_data TEXT,
+    raw_details JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 5. Policy Decisions
 CREATE TABLE IF NOT EXISTS policy_decisions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    request_id VARCHAR(64) REFERENCES traffic_logs(request_id) ON DELETE CASCADE,
+    request_id VARCHAR(64) NOT NULL,
     action VARCHAR(32) NOT NULL, -- ALLOW, BLOCK, CONTAIN_DECEIVE, RATE_LIMIT
     reason TEXT NOT NULL,
     applied_by VARCHAR(64) DEFAULT 'POLICY_ENGINE',
@@ -67,7 +76,7 @@ CREATE TABLE IF NOT EXISTS policy_decisions (
 -- 6. Mitigation Verifications
 CREATE TABLE IF NOT EXISTS mitigation_verifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    request_id VARCHAR(64) REFERENCES traffic_logs(request_id) ON DELETE CASCADE,
+    request_id VARCHAR(64) NOT NULL,
     verification_status VARCHAR(32) NOT NULL, -- VERIFIED, FAILED, INCONCLUSIVE
     origin_impact_detected BOOLEAN DEFAULT FALSE,
     origin_request_count INT DEFAULT 0,
@@ -78,7 +87,7 @@ CREATE TABLE IF NOT EXISTS mitigation_verifications (
 -- 7. Decoy Interactions (Honeypot Logs)
 CREATE TABLE IF NOT EXISTS decoy_interactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    request_id VARCHAR(64) REFERENCES traffic_logs(request_id) ON DELETE CASCADE,
+    request_id VARCHAR(64) NOT NULL,
     decoy_endpoint VARCHAR(128) NOT NULL,
     http_method VARCHAR(16) NOT NULL,
     payload TEXT,
@@ -91,5 +100,10 @@ CREATE TABLE IF NOT EXISTS decoy_interactions (
 CREATE INDEX IF NOT EXISTS idx_traffic_req_id ON traffic_logs(request_id);
 CREATE INDEX IF NOT EXISTS idx_traffic_source_ip ON traffic_logs(source_ip);
 CREATE INDEX IF NOT EXISTS idx_traffic_created_at ON traffic_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_waf_events_request_id ON waf_events(request_id);
+CREATE INDEX IF NOT EXISTS idx_waf_events_trace_id ON waf_events(trace_id);
+CREATE INDEX IF NOT EXISTS idx_waf_events_created_at ON waf_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_waf_rule_id ON waf_events(rule_id);
+CREATE INDEX IF NOT EXISTS idx_waf_severity ON waf_events(severity_label);
+CREATE INDEX IF NOT EXISTS idx_waf_action ON waf_events(action);
 CREATE INDEX IF NOT EXISTS idx_verif_status ON mitigation_verifications(verification_status);

@@ -2,6 +2,8 @@ export interface ServiceStatus {
   status: 'operational' | 'healthy' | 'connected' | 'reachable' | 'degraded' | 'scheduled' | 'offline';
   type: string;
   role: string;
+  mode?: string;
+  version?: string;
 }
 
 export interface SystemStatusData {
@@ -9,6 +11,8 @@ export interface SystemStatusData {
   platform: string;
   tagline: string;
   version: string;
+  request_id?: string;
+  trace_id?: string;
   timestamp: string;
   services: {
     gateway: ServiceStatus;
@@ -22,6 +26,7 @@ export interface SystemStatusData {
   };
   metrics: {
     system_events_count: number;
+    waf_events_count?: number;
     recent_events: Array<{
       service_name: string;
       event_type: string;

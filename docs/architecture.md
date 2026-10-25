@@ -10,7 +10,7 @@ Traditional perimeter defenses rely either on static rule sets (WAF) or post-bre
 ## 2. Request Lifecycle & Traffic Pipeline
 
 ```
-[External Traffic / Attack Simulator]
+[Client / Authorized Attack Simulator]
                │
                ▼
    [AEGIS Ingress Gateway (:8080)]
@@ -23,9 +23,11 @@ Traditional perimeter defenses rely either on static rule sets (WAF) or post-bre
          - Controlled JSON error handling
                │
                ▼
-   [Coraza WAF + OWASP CRS]  <── (Phase 3)
-         - Inspection of headers, query, body
-         - Rule violation scoring
+   [Coraza WAF (Internal :8080)]
+         - OWASP Coraza Engine v3.2.2
+         - OWASP Core Rule Set v4.30.0
+         - Anomaly scoring & method validation
+         - Clean JSON blocking interception
                │
                ▼
          [AgentShield]        <── (Phase 6)
@@ -56,6 +58,44 @@ Traditional perimeter defenses rely either on static rule sets (WAF) or post-bre
                                           [SOC Dashboard]
 ```
 
+### 2.1 Normal Traffic Pipeline
+```
+Client
+  ↓
+AEGIS Gateway (:8080)
+  ↓
+Coraza WAF (Caddy)
+  ↓
+OWASP CRS (Rule Evaluation: Clean)
+  ↓
+Origin Application (:8088)
+  ↓
+Response to Client (200 OK)
+```
+
+### 2.2 Attack Blocking & Telemetry Flow
+```
+Suspicious Request
+  ↓
+AEGIS Gateway
+  ↓
+Coraza WAF
+  ↓
+CRS Rule Match (Anomaly Score Exceeded)
+  ↓
+BLOCK (HTTP 403 Forbidden)
+  ↓
+Coraza JSON Audit Log (/var/log/coraza/audit.log)
+  ↓
+Async Log Watcher Worker (FastAPI)
+  ↓
+Internal Ingestion API (/api/v1/internal/waf/events)
+  ↓
+PostgreSQL Database (`waf_events` table)
+  ↓
+SOC Dashboard Live Telemetry
+```
+
 ---
 
 ## 3. Subsystem Breakdown
@@ -82,22 +122,38 @@ Traditional perimeter defenses rely either on static rule sets (WAF) or post-bre
   - 502/503/504 upstream errors return clean JSON envelopes without exposing internal Docker networking details.
   - Unsupported HTTP verbs receive 405 Method Not Allowed JSON responses.
 
-### 3.2 Control Plane API (`services/api`)
+### 3.2 Real Web Application Firewall (`services/waf`) — Phase 3 Active
+- **Engine**: OWASP Coraza WAF v3.2.2 running on Caddy v2.11.4 (`ghcr.io/coreruleset/coraza-crs:caddy-alpine`).
+- **Rule Set**: OWASP Core Rule Set (CRS) v4.30.0 pinned for reproducible, deterministic threat detection.
+- **Operational Modes**:
+  - `BLOCK` (Default for Hackathon): Blocks requests exceeding CRS anomaly score threshold with HTTP 403 Forbidden.
+  - `DETECTION`: Logs rule matches to the audit log while forwarding requests to the origin.
+- **Method Policy Enforcement**: CRS rule 911100 configured via `/opt/coraza/config.d/01-methods.conf` to allow standard RESTful verbs (`GET HEAD POST OPTIONS PUT PATCH DELETE`).
+- **Error Interception**: Nginx intercepts Coraza 403 blocks via `proxy_intercept_errors on;` and `@waf_blocked` named location, outputting a sanitized, non-leaking JSON error:
+  `{"error":"request_blocked","status":403,"message":"Request blocked by AEGIS Web Application Firewall","request_id":"...","trace_id":"..."}`
+- **Origin Isolation**: Blocked requests are terminated at the WAF level; protected origin receives **0** malicious requests during attacks.
+- **Audit Logging & Event Pipeline**:
+  - Coraza writes structured JSON audit logs to `/var/log/coraza/audit.log` (shared Docker volume `waf_logs`).
+  - FastAPI asynchronous background watcher (`waf_log_watcher.py`) tails the log in real time.
+  - Ingests events into `waf_events` table in PostgreSQL with rule IDs, messages, severity, tags, and anomaly scores.
+
+
+### 3.3 Control Plane API (`services/api`)
 - FastAPI service coordinating system state and metrics.
-- Exposes `/health`, `/api/v1/health`, and `/api/v1/system/status`.
+- Exposes `/health`, `/api/v1/health`, `/api/v1/system/status`, and `/api/v1/waf/status`.
 - Connects to PostgreSQL telemetry database via SQLAlchemy connection pool.
 
-### 3.3 Database (`database/`)
+### 3.4 Database (`database/`)
 - PostgreSQL 16 Alpine container.
-- Holds relational audit events, session tracking, WAF triggers, policy decisions, honeypot telemetry, and mitigation verifications.
+- Holds relational audit events, session tracking, WAF triggers (`waf_events`), policy decisions, honeypot telemetry, and mitigation verifications.
 
-### 3.4 Protected Origin (`services/origin`)
+### 3.5 Protected Origin (`services/origin`)
 - Demonstrates upstream protection.
 - Runs exclusively on the internal `aegis-net` Docker network; unreachable directly from host.
 
-### 3.5 SOC Dashboard (`apps/dashboard`)
+### 3.6 SOC Dashboard (`apps/dashboard`)
 - React 18, TypeScript, Tailwind CSS, Vite.
-- Dark SOC theme inspired by enterprise cyber command centers.
+- Dark SOC theme inspired by enterprise cyber command centers with live WAF operational status indicators.
 
 ---
 
@@ -109,6 +165,7 @@ Traditional perimeter defenses rely either on static rule sets (WAF) or post-bre
 | **3000** | **PUBLIC / HOST** | SOC Dashboard | Operator interface for security monitoring |
 | **8001** | **PUBLIC / HOST** (Dev) | Control Plane API | Development and debugging API access |
 | **5433** | **PUBLIC / HOST** (Dev) | PostgreSQL Store | Direct database inspection for developers |
+| **8080** | **INTERNAL ONLY** | Coraza WAF (`waf`) | `waf:8080` on `aegis-net`; inspected ingress traffic proxy |
 | **8088** | **INTERNAL ONLY** | Protected Origin | Internal network `aegis-net`; totally inaccessible from outside |
 | **8000** | **INTERNAL ONLY** | API internal port | Ingress gateway proxies `/api/` to `api:8000` |
 | **5432** | **INTERNAL ONLY** | DB internal port | `db:5432` accessible only by API |

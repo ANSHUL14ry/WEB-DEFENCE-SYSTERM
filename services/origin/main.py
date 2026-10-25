@@ -2,7 +2,7 @@ import logging
 import asyncio
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 import datetime
 
 logging.basicConfig(
@@ -12,9 +12,9 @@ logging.basicConfig(
 logger = logging.getLogger("aegis.origin")
 
 app = FastAPI(
-    title="AEGIS Protected Origin Application (Temporary)",
-    description="Simulated origin application workload sitting safely behind AEGIS Gateway",
-    version="0.2.0"
+    title="AEGIS Protected Origin Application",
+    description="Simulated origin application workload sitting safely behind AEGIS Gateway and Coraza WAF",
+    version="0.3.0"
 )
 
 # Enable CORS on origin
@@ -26,7 +26,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory mock product state for testing CRUD methods
+# In-memory audit tracking for origin protection verification
+REQUEST_LOG: List[Dict[str, Any]] = []
+
+# Mock product state
 PRODUCTS = [
     {"id": 1, "name": "Secure Gateway License", "category": "defense", "price": 499.0},
     {"id": 2, "name": "AgentShield Heuristic Engine", "category": "ai-defense", "price": 899.0},
@@ -34,12 +37,23 @@ PRODUCTS = [
 ]
 
 @app.middleware("http")
-async def log_incoming_requests(request: Request, call_next):
+async def log_and_track_incoming_requests(request: Request, call_next):
     req_id = request.headers.get("x-request-id", "none")
     trace_id = request.headers.get("x-trace-id", "none")
     client_ip = request.client.host if request.client else "unknown"
-    logger.info(f"Incoming: {request.method} {request.url.path} | Client: {client_ip} | X-Request-ID: {req_id} | X-Trace-ID: {trace_id}")
     
+    # Track request internally for verification
+    if not request.url.path.startswith("/health") and not request.url.path.startswith("/stats"):
+        REQUEST_LOG.append({
+            "request_id": req_id,
+            "trace_id": trace_id,
+            "method": request.method,
+            "path": request.url.path,
+            "client_ip": client_ip,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        })
+    
+    logger.info(f"Incoming: {request.method} {request.url.path} | Client: {client_ip} | X-Request-ID: {req_id} | X-Trace-ID: {trace_id}")
     response = await call_next(request)
     logger.info(f"Response: {response.status_code} for {request.method} {request.url.path} | X-Request-ID: {req_id}")
     return response
@@ -49,16 +63,30 @@ def health():
     return {
         "status": "healthy",
         "service": "temporary-origin",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
+
+@app.api_route("/stats", methods=["GET", "HEAD"])
+def get_origin_stats():
+    """Telemetry endpoint allowing automated tests and AEGIS verification engine to inspect origin reach."""
+    return {
+        "service": "origin",
+        "total_requests_received": len(REQUEST_LOG),
+        "recent_requests": REQUEST_LOG[-25:]
+    }
+
+@app.post("/reset-stats")
+def reset_origin_stats():
+    REQUEST_LOG.clear()
+    return {"status": "reset", "total_requests_received": 0}
 
 @app.api_route("/", methods=["GET", "HEAD", "OPTIONS"])
 def read_root(request: Request) -> Dict[str, Any]:
     return {
         "message": "Welcome to Origin Application (Protected by AEGIS Ω)",
         "service": "origin",
-        "protection": "AEGIS Ω Reverse Proxy Active",
+        "protection": "AEGIS Ω Reverse Proxy + Coraza WAF Active",
         "request_id": request.headers.get("x-request-id", "Not Provided (Direct Connection)"),
         "trace_id": request.headers.get("x-trace-id", "none"),
         "client_host": request.client.host if request.client else "unknown",

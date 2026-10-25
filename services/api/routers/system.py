@@ -12,12 +12,16 @@ router = APIRouter(prefix="/api/v1/system", tags=["System"])
 def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[str, Any]:
     db_ok = check_db_connection()
     events_count = 0
+    waf_events_count = 0
     recent_events = []
     
     if db_ok:
         try:
             res = db.execute(text("SELECT COUNT(*) FROM system_events")).scalar()
             events_count = int(res) if res is not None else 0
+
+            res_waf = db.execute(text("SELECT COUNT(*) FROM waf_events")).scalar()
+            waf_events_count = int(res_waf) if res_waf is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -53,13 +57,20 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
             "database": {"status": "connected" if db_ok else "degraded", "type": "PostgreSQL", "role": "State & Telemetry Store"},
             "api": {"status": "healthy", "type": "FastAPI Core", "role": "Control Plane & REST API"},
             "origin": {"status": "reachable", "type": "Protected Application", "role": "Upstream Workload"},
-            "waf": {"status": "scheduled", "type": "Coraza + OWASP CRS", "role": "Phase 3 Milestone"},
+            "waf": {
+                "status": "operational",
+                "type": f"{settings.WAF_ENGINE} + {settings.CRS_VERSION}",
+                "role": "Real Application Firewall, CRS Inspection & Threat Blocking",
+                "mode": settings.WAF_MODE,
+                "version": "Phase 3 Active"
+            },
             "agent_shield": {"status": "scheduled", "type": "Behavioral Engine", "role": "Phase 6 Milestone"},
             "risk_engine": {"status": "scheduled", "type": "Deterministic Scorer", "role": "Phase 5 Milestone"},
             "honeypot": {"status": "scheduled", "type": "Isolated Decoy Environment", "role": "Phase 8 Milestone"}
         },
         "metrics": {
             "system_events_count": events_count,
+            "waf_events_count": waf_events_count,
             "recent_events": recent_events
         }
     }

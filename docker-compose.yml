@@ -12,7 +12,8 @@ services:
       - "5433:5432"
     volumes:
       - ./database/migrations/01_init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./database/migrations/02_waf_events.sql:/docker-entrypoint-initdb.d/02_waf_events.sql:ro
+      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/03_seed.sql:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aegis_admin -d aegis_security_db"]
@@ -33,16 +34,20 @@ services:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-aegis_admin}:${POSTGRES_PASSWORD:-aegis_secure_hackathon_pass_2026}@db:5432/${POSTGRES_DB:-aegis_security_db}
       AEGIS_ENV: ${AEGIS_ENV:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      WAF_MODE: ${WAF_MODE:-BLOCK}
+      CORAZA_AUDIT_LOG_PATH: /var/log/coraza/audit.log
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080}
     ports:
       - "8001:8000"
+    volumes:
+      - waf_logs:/var/log/coraza:ro
     depends_on:
       db:
         condition: service_healthy
     networks:
       - aegis-net
 
-  # 3. Temporary Protected Origin Service (Demonstrating Ingress & Protection)
+  # 3. Temporary Protected Origin Service (Protected Application)
   origin:
     build:
       context: ./services/origin
@@ -52,7 +57,32 @@ services:
     networks:
       - aegis-net
 
-  # 4. AEGIS Ingress Gateway (Reverse Proxy & Header Tagging)
+  # 4. Real Coraza WAF Service (Coraza v3 + OWASP CRS v4.30.0)
+  waf:
+    build:
+      context: ./services/waf
+      dockerfile: Dockerfile
+    container_name: aegis-waf
+    restart: unless-stopped
+    environment:
+      BACKEND: "origin:8088"
+      PORT: "8080"
+      CORAZA_RULE_ENGINE: ${WAF_RULE_ENGINE:-On} # On for BLOCK mode, DetectionOnly for DETECTION
+      CORAZA_REQ_BODY_ACCESS: "On"
+      CORAZA_RESP_BODY_ACCESS: "On"
+      CORAZA_AUDIT_ENGINE: "RelevantOnly"
+      CORAZA_AUDIT_LOG: "/var/log/coraza/audit.log"
+      CORAZA_AUDIT_LOG_FORMAT: "JSON"
+      ACCESSLOG: "/var/log/coraza/access.log"
+    volumes:
+      - waf_logs:/var/log/coraza
+    depends_on:
+      origin:
+        condition: service_healthy
+    networks:
+      - aegis-net
+
+  # 5. AEGIS Ingress Gateway (Reverse Proxy & Header Tagging)
   gateway:
     build:
       context: ./gateway/nginx
@@ -64,12 +94,12 @@ services:
     depends_on:
       api:
         condition: service_healthy
-      origin:
+      waf:
         condition: service_healthy
     networks:
       - aegis-net
 
-  # 5. SOC Defense Dashboard
+  # 6. SOC Defense Dashboard
   dashboard:
     build:
       context: ./apps/dashboard
@@ -86,6 +116,8 @@ services:
 
 volumes:
   pgdata:
+    driver: local
+  waf_logs:
     driver: local
 
 networks:

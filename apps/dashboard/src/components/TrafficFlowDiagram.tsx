@@ -10,12 +10,17 @@ export const TrafficFlowDiagram: React.FC = () => {
             AEGIS Ω Real Architecture & Packet Pipeline
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Phase 1 Active Route: Client &rarr; Ingress Gateway &rarr; Origin (with Request-ID tagging)
+            Phase 3 Active Route: Client &rarr; Ingress Gateway &rarr; Coraza WAF (CRS v4) &rarr; Origin
           </p>
         </div>
-        <span className="text-xs font-mono px-2.5 py-1 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800">
-          Reverse Proxy Ingress :8080
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono px-2.5 py-1 rounded bg-amber-950/80 text-amber-400 border border-amber-800">
+            WAF Active: BLOCK Mode
+          </span>
+          <span className="text-xs font-mono px-2.5 py-1 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800">
+            Ingress :8080
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-center py-4 text-center">
@@ -23,7 +28,7 @@ export const TrafficFlowDiagram: React.FC = () => {
         <div className="bg-soc-card p-3 rounded-lg border border-soc-border">
           <Globe className="w-5 h-5 mx-auto text-blue-400 mb-1" />
           <div className="text-xs font-semibold text-slate-200">Client / Browser</div>
-          <div className="text-[10px] font-mono text-slate-400 mt-1">:8080 Request</div>
+          <div className="text-[10px] font-mono text-slate-400 mt-1">:8080 Ingress</div>
         </div>
 
         <div className="hidden md:flex justify-center text-slate-600">
@@ -34,22 +39,22 @@ export const TrafficFlowDiagram: React.FC = () => {
         <div className="bg-soc-card p-3 rounded-lg border border-cyan-800/80 shadow-sm shadow-cyan-950">
           <Shield className="w-5 h-5 mx-auto text-cyan-400 mb-1" />
           <div className="text-xs font-semibold text-slate-200">AEGIS Gateway</div>
-          <div className="text-[10px] font-mono text-emerald-400 mt-1">ACTIVE (Nginx)</div>
+          <div className="text-[10px] font-mono text-cyan-400 mt-1">Tracing & Headers</div>
         </div>
 
         <div className="hidden md:flex justify-center text-slate-600">
-          <ArrowRight className="w-4 h-4 text-slate-600" />
+          <ArrowRight className="w-4 h-4 text-amber-500 animate-pulse" />
         </div>
 
         {/* Step 3 */}
-        <div className="bg-soc-card p-3 rounded-lg border border-slate-800 opacity-60">
+        <div className="bg-soc-card p-3 rounded-lg border border-amber-600/80 shadow-sm shadow-amber-950">
           <Filter className="w-5 h-5 mx-auto text-amber-400 mb-1" />
-          <div className="text-xs font-semibold text-slate-300">Coraza WAF</div>
-          <div className="text-[10px] font-mono text-slate-500 mt-1">Phase 3</div>
+          <div className="text-xs font-semibold text-slate-200">Coraza WAF</div>
+          <div className="text-[10px] font-mono text-emerald-400 mt-1">OWASP CRS v4.3.0</div>
         </div>
 
         <div className="hidden md:flex justify-center text-slate-600">
-          <ArrowRight className="w-4 h-4 text-slate-600" />
+          <ArrowRight className="w-4 h-4 text-emerald-500 animate-pulse" />
         </div>
 
         {/* Step 4 */}
@@ -57,7 +62,7 @@ export const TrafficFlowDiagram: React.FC = () => {
           <div className="bg-soc-card p-2 rounded-lg border border-emerald-800/60">
             <Server className="w-4 h-4 mx-auto text-emerald-400 mb-1" />
             <div className="text-[11px] font-semibold text-slate-200">Origin</div>
-            <div className="text-[9px] font-mono text-emerald-400">ACTIVE</div>
+            <div className="text-[9px] font-mono text-emerald-400">PROTECTED</div>
           </div>
           <div className="bg-soc-card p-2 rounded-lg border border-slate-800 opacity-50">
             <Eye className="w-4 h-4 mx-auto text-purple-400 mb-1" />
@@ -70,15 +75,15 @@ export const TrafficFlowDiagram: React.FC = () => {
       <div className="mt-4 pt-3 border-t border-soc-border grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-400">
         <div className="flex items-center gap-2">
           <Lock className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Origin Isolation: Backend unreachable except via Gateway</span>
+          <span>Origin Protection: Blocked attacks never reach origin</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>Gateway Health: HTTP 200 on /healthz</span>
+          <span>CRS Inspection: SQLi, XSS, LFI, RCE & Protocol rules active</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-          <span>Header Propagation: X-Request-ID attached</span>
+          <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span>WAF Telemetry: Real-time event ingestion into PostgreSQL</span>
         </div>
       </div>
     </div>

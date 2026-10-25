@@ -23,12 +23,20 @@ All attack simulation tools provided within this platform operate strictly in sa
 - **AEGIS Defense:** Explainable behavioral indicators identify the structured attack chain rather than relying on brittle signatures alone.
 
 ### 2.3 Web Application Attackers (OWASP Top 10)
-- **Pattern:** SQLi, XSS, Path Traversal, SSRF, Command Injection.
-- **AEGIS Defense:** Coraza WAF with OWASP Core Rule Set (CRS) evaluates anomalous payloads with strict anomaly thresholds.
+- **Pattern:** SQLi (`' OR '1'='1`), Cross-Site Scripting (`<script>alert(1)</script>`), Path Traversal (`../../etc/passwd`), SSRF, Command Injection.
+- **AEGIS Defense:** Coraza WAF v3.2.2 with OWASP Core Rule Set (CRS) v4.30.0 evaluates anomalous payloads against strict anomaly thresholds.
+- **Controlled Interception:** Requests that breach anomaly thresholds are dropped immediately with HTTP 403 Forbidden.
+- **Zero Information Leakage:** Public 403 responses contain only generic sanitized error envelopes (`{"error": "request_blocked", ...}`). Internal CRS rule IDs, filesystem paths, and Caddy/Coraza stack internals are never leaked externally.
 
 ---
 
-## 3. Deception Isolation & Sandbox Principles
+## 3. Data Sanitization & Credential Protection
+- **No Password / Secret Logging:** Access logs and WAF event stores strip and redact sensitive parameters (passwords, tokens, authorization headers).
+- **Safe URI Logging:** Gateway logs normalized URI paths without query parameters to prevent leakage of credentials passed via URL.
+
+---
+
+## 4. Deception Isolation & Sandbox Principles
 - **No Production Data in Honeypots:** Decoys use 100% synthetic mock tables and synthetic session tokens.
 - **Network Isolation:** Honeypots have zero route access to real databases or production backends.
 - **Non-Bypass Rule:** A WAF-blocked request is never automatically bypassed into a honeypot; deception occurs strictly through explicit Policy Engine qualification.

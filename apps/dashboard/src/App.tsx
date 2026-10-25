@@ -4,7 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { SystemHealthCard } from './components/SystemHealthCard';
 import { TrafficFlowDiagram } from './components/TrafficFlowDiagram';
 import { SystemStatusData } from './types';
-import { Activity, ShieldCheck, Database, Layers, Terminal, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert } from 'lucide-react';
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? `http://${window.location.hostname}:8001`
@@ -21,12 +21,10 @@ export const App: React.FC = () => {
     setIsRefreshing(true);
     setErrorMsg(null);
     try {
-      // First try direct API endpoint, then fallback to gateway proxy /api/v1/system/status
       let res;
       try {
         res = await fetch(`${API_BASE}/api/v1/system/status`);
       } catch (e) {
-        // Fallback to gateway port 8080 proxy
         res = await fetch(`http://${window.location.hostname}:8080/api/v1/system/status`);
       }
       
@@ -83,10 +81,25 @@ export const App: React.FC = () => {
               <div>
                 <span className="text-slate-400 text-xs font-mono">GATEWAY INGRESS</span>
                 <div className="text-xl font-bold font-mono text-white mt-1">PORT 8080</div>
-                <span className="text-[10px] text-emerald-400 font-mono">Proxy Mode Active</span>
+                <span className="text-[10px] text-cyan-400 font-mono">Proxy & Tracing Active</span>
               </div>
               <div className="p-3 bg-cyan-950 rounded-lg border border-cyan-800">
                 <ShieldCheck className="w-5 h-5 text-cyan-400" />
+              </div>
+            </div>
+
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <span className="text-slate-400 text-xs font-mono">WAF / CRS DEFENSE</span>
+                <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+                  {systemData?.services.waf.mode ?? 'BLOCK'} MODE
+                </div>
+                <span className="text-[10px] text-amber-300 font-mono">
+                  {systemData?.metrics.waf_events_count ?? 0} Threats Intercepted
+                </span>
+              </div>
+              <div className="p-3 bg-amber-950 rounded-lg border border-amber-800">
+                <ShieldAlert className="w-5 h-5 text-amber-400" />
               </div>
             </div>
 
@@ -102,17 +115,6 @@ export const App: React.FC = () => {
               </div>
               <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
                 <Database className="w-5 h-5 text-slate-300" />
-              </div>
-            </div>
-
-            <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
-              <div>
-                <span className="text-slate-400 text-xs font-mono">PROTECTED ORIGIN</span>
-                <div className="text-xl font-bold font-mono text-emerald-400 mt-1">ISOLATED</div>
-                <span className="text-[10px] text-emerald-400 font-mono">Behind AEGIS Gateway</span>
-              </div>
-              <div className="p-3 bg-emerald-950 rounded-lg border border-emerald-800">
-                <Activity className="w-5 h-5 text-emerald-400" />
               </div>
             </div>
 
@@ -139,7 +141,7 @@ export const App: React.FC = () => {
                 AEGIS Ω Microservices Subsystem Status
               </h3>
               <span className="text-[11px] font-mono text-slate-500">
-                Phase 1 Prototype Verification
+                Phase 3 Prototype Verification
               </span>
             </div>
 
@@ -158,7 +160,12 @@ export const App: React.FC = () => {
                   <SystemHealthCard 
                     serviceKey="gateway" 
                     name="Gateway" 
-                    service={{ status: 'operational', type: 'Nginx Reverse Proxy', role: 'Traffic Ingress & Header Tagging' }} 
+                    service={{ status: 'operational', type: 'Nginx Ingress Gateway', role: 'Traffic Ingress, Tracing & Headers' }} 
+                  />
+                  <SystemHealthCard 
+                    serviceKey="waf" 
+                    name="WAF" 
+                    service={{ status: 'operational', type: 'Coraza v3 + OWASP CRS v4.3.0', role: 'Real Application Firewall & Rule Engine' }} 
                   />
                   <SystemHealthCard 
                     serviceKey="database" 
@@ -170,11 +177,6 @@ export const App: React.FC = () => {
                     name="Control Plane" 
                     service={{ status: 'healthy', type: 'FastAPI Core', role: 'Control Plane & REST API' }} 
                   />
-                  <SystemHealthCard 
-                    serviceKey="origin" 
-                    name="Origin App" 
-                    service={{ status: 'reachable', type: 'Protected Application', role: 'Upstream Workload' }} 
-                  />
                 </>
               )}
             </div>
@@ -184,7 +186,7 @@ export const App: React.FC = () => {
           <div className="bg-soc-panel border border-soc-border rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs uppercase font-mono tracking-wider font-semibold text-slate-300">
-                Phase 1 Initialization Log & Persistence Verification
+                System Audit Log & Telemetry Persistence Verification
               </h3>
               <span className="text-[11px] font-mono text-cyan-400">PostgreSQL Store</span>
             </div>

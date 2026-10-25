@@ -4,7 +4,7 @@ from typing import List
 
 class Settings(BaseSettings):
     AEGIS_ENV: str = "development"
-    AEGIS_VERSION: str = "0.1.0-alpha"
+    AEGIS_VERSION: str = "0.3.0-alpha"
     LOG_LEVEL: str = "INFO"
     
     # Database
@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     
     # Ports
     API_PORT: int = 8000
+    
+    # WAF Configuration (Phase 3)
+    WAF_MODE: str = "BLOCK" # BLOCK or DETECTION
+    WAF_ENGINE: str = "Coraza v3"
+    CRS_VERSION: str = "OWASP CRS v4.3.0"
+    CORAZA_AUDIT_LOG_PATH: str = "/var/log/coraza/audit.log"
     
     # CORS
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080"
