@@ -113,6 +113,23 @@ PostgreSQL Database
 Real-Time SOC Dashboard
 ```
 
+### 2.4 Risk Evaluation Dataflow
+```
+Security Event
+      ↓
+Risk Engine (Deterministic Evaluator)
+      ↓
+Risk Signals Decomposition
+      ↓
+Risk Score (0–100 Capped) & Severity Mapping
+      ↓
+Risk Assessment Storage (`risk_assessments`)
+      ↓
+Real-Time WebSocket Stream (`RISK_SCORE_UPDATE`)
+      ↓
+SOC Dashboard Live Telemetry
+```
+
 ---
 
 ## 3. Subsystem Breakdown
@@ -184,6 +201,27 @@ Real-Time SOC Dashboard
 - **Automated Credential Sanitization**: Recursively redacts passwords, tokens, API keys, and authorization secrets from both metadata payloads and URI query parameters.
 - **Real-Time WebSocket Broadcaster (`broadcaster.py`)**: Asynchronously multicasts newly ingested security events to all connected SOC dashboard clients.
 - **Database Model (`security_events`)**: Persistent relational table indexed by timestamp, identifiers, severity, and event type.
+
+### 3.8 Explainable Risk Engine (`services/api/risk_engine/`) — Phase 5 Active
+- **Deterministic 0–100 Threat Quantification**: Computes reproducible, testable threat scores independent from external AI/ML APIs.
+- **Configurable Severity Thresholds**:
+  - `0–24`: LOW
+  - `25–49`: MEDIUM
+  - `50–74`: HIGH
+  - `75–100`: CRITICAL
+- **Decomposed Risk Signals**:
+  - `waf_severity`: CRITICAL (+30), HIGH (+20), MEDIUM (+10), LOW (+5)
+  - `known_attack_rule`: High-risk OWASP CRS rule matches like SQLi (942xxx), XSS (941xxx), LFI/RFI (930xxx), RCE (932xxx) (+20)
+  - `endpoint_sensitivity`: Target URI sensitivity rating: HIGH (+20 for `/admin`, `/api/users`, `/.env`), MEDIUM (+10 for `/login`, `/search`), LOW (+0 for `/products`)
+  - `elevated_anomaly_score`: CRS transaction anomaly score >= 5 (+10)
+  - `repeated_activity`: Correlated events within 60s window: 2-3 events (+10), 4+ events (+20)
+  - `request_velocity`: Rapid burst sequence >= 5 events in 60s (+15)
+  - `endpoint_probing`: Path enumeration across trace >= 3 distinct endpoints (+10)
+- **Temporal Correlation Window**: Evaluates activity over a configurable 60-second window linked by `trace_id` and `session_id`.
+- **Confidence Rating**: Deterministic formula based on confirmed signals: `min(1.0, 0.50 + 0.10 * count)`. Zero ML hallucination.
+- **Failure Safety**: Ingestion of events and WAF threat blocking is isolated from risk calculation errors; risk exceptions are logged safely without disrupting ingress.
+- **Versioned Traceability**: Persists `engine_version: "risk-engine-v1"` for backward-compatible audit tracking.
+- **Future Integration Point**: Feeds directly into AgentShield (Phase 6) and Policy Engine (Phase 7).
 
 ---
 

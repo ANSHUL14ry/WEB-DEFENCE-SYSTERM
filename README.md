@@ -4,6 +4,7 @@
 [![Phase 2 Status](https://img.shields.io/badge/Phase%202-Gateway%20Hardening-emerald?style=flat-square)](.)
 [![Phase 3 Status](https://img.shields.io/badge/Phase%203-Real%20WAF%20Verified-emerald?style=flat-square)](.)
 [![Phase 4 Status](https://img.shields.io/badge/Phase%204-Security%20Pipeline%20Verified-emerald?style=flat-square)](.)
+[![Phase 5 Status](https://img.shields.io/badge/Phase%205-Risk%20Engine%20Verified-emerald?style=flat-square)](.)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
@@ -97,7 +98,7 @@ Phase 2 establishes a hardened, observable ingress layer:
 
 ### Running Automated Tests
 ```bash
-# Run all Phase 1, Phase 2, Phase 3, and Phase 4 integration and unit tests (40 tests)
+# Run all Phase 1-5 integration and unit tests (52 tests)
 pytest tests/ -v
 ```
 
@@ -154,13 +155,42 @@ Phase 4 establishes an enterprise security telemetry and correlation pipeline co
 
 ---
 
-## 6. Phase-by-Phase Roadmap
+## 6. Phase 5: Explainable Risk Engine
+
+Phase 5 introduces a deterministic, explainable Threat Scoring Engine that converts raw security events into transparent, auditable risk evaluations:
+1. **Mathematical Scoring Architecture**:
+   - Scores bounded strictly from `0` to `100`.
+   - **Deterministic & Reproducible**: Given the same telemetry and context, the engine generates the identical score every time. Zero random numbers or arbitrary "black-box" outputs.
+2. **Transparent Severity Thresholds**:
+   - `0 - 24`: **LOW**
+   - `25 - 49`: **MEDIUM**
+   - `50 - 74`: **HIGH**
+   - `75 - 100`: **CRITICAL**
+3. **Decomposed Risk Signals**:
+   - `waf_severity`: CRITICAL (+30), HIGH (+20), MEDIUM (+10), LOW (+5)
+   - `known_attack_rule`: +20 for CRS rule IDs in ranges 942xxx (SQLi), 941xxx (XSS), 930xxx (LFI), 932xxx (RCE)
+   - `elevated_anomaly_score`: +10 if CRS anomaly score >= 5
+   - `endpoint_sensitivity`: HIGH (+20 for `/admin`, `/.env`), MEDIUM (+10 for `/login`), LOW (+0)
+   - `repeated_activity`: 2-3 events (+10), 4+ events (+20) in 60s
+   - `request_velocity`: >= 5 events in 60s (+15)
+   - `endpoint_probing`: >= 3 distinct paths probed (+10)
+4. **Temporal Context & Correlation**:
+   - Evaluates threat escalation across a rolling 60-second temporal window linked by `trace_id` / `session_id`.
+5. **Persistence & Real-Time SOC Telemetry**:
+   - Stored in PostgreSQL `risk_assessments` table with compound indexing.
+   - Multicasts real-time `RISK_SCORE_UPDATE` packets via WebSockets to the SOC Dashboard's interactive Risk Gauge & Signals Breakdown panel.
+6. **Failure Safety Guarantee**:
+   - Engine failures or missing telemetry are isolated: WAF blocking and event ingestion proceed without interruption.
+
+---
+
+## 7. Phase-by-Phase Roadmap
 
 - [x] **Phase 1: Foundation** (Docker Compose, Gateway, FastAPI, PostgreSQL, Origin, Dashboard Skeleton, Tests)
 - [x] **Phase 2: Gateway Hardening & Tracing** (Request ID validation, trace ID, JSON logs, security headers, limits, timeouts)
 - [x] **Phase 3: Real WAF** (Coraza engine v3 + OWASP CRS v4 integration, origin isolation, telemetry ingestion)
 - [x] **Phase 4: Event Pipeline** (Unified security event pipeline, deduplication, correlation, WebSocket streaming, SOC feed)
-- [ ] **Phase 5: Risk Engine** (Deterministic 0-100 scoring & signal weighting)
+- [x] **Phase 5: Risk Engine** (Deterministic 0-100 scoring & signal weighting)
 - [ ] **Phase 6: AgentShield** (Behavioral sequence analysis & agentic pattern detection)
 - [ ] **Phase 7: Policy Engine** (ALLOW, BLOCK, CONTAIN + DECEIVE policies)
 - [ ] **Phase 8: Adaptive Honeypot** (Synthetic decoys: `/decoy-admin`, `/decoy-api`)

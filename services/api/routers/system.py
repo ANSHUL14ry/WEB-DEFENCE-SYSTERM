@@ -14,6 +14,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
     events_count = 0
     waf_events_count = 0
     security_events_count = 0
+    risk_assessments_count = 0
     recent_events = []
     
     if db_ok:
@@ -26,6 +27,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
 
             res_sec = db.execute(text("SELECT COUNT(*) FROM security_events")).scalar()
             security_events_count = int(res_sec) if res_sec is not None else 0
+
+            res_risk = db.execute(text("SELECT COUNT(*) FROM risk_assessments")).scalar()
+            risk_assessments_count = int(res_risk) if res_risk is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -74,14 +78,20 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
                 "role": "Event Ingestion, Deduplication, Correlation & Live Streaming",
                 "version": "Phase 4 Active"
             },
+            "risk_engine": {
+                "status": "operational",
+                "type": "Deterministic Scorer (0-100)",
+                "role": "Explainable Threat Scoring & Temporal Signal Weighting",
+                "version": "Phase 5 Active"
+            },
             "agent_shield": {"status": "scheduled", "type": "Behavioral Engine", "role": "Phase 6 Milestone"},
-            "risk_engine": {"status": "scheduled", "type": "Deterministic Scorer", "role": "Phase 5 Milestone"},
             "honeypot": {"status": "scheduled", "type": "Isolated Decoy Environment", "role": "Phase 8 Milestone"}
         },
         "metrics": {
             "system_events_count": events_count,
             "waf_events_count": waf_events_count,
             "security_events_count": security_events_count,
+            "risk_assessments_count": risk_assessments_count,
             "recent_events": recent_events
         }
     }

@@ -12,7 +12,7 @@ Demonstrate real-time adaptive defense, automated behavioral detection (AgentShi
 2. Open Gateway Ingress: `http://localhost:8080/`
 3. Result: Normal user is permitted, dashboard shows `ALLOW`, request ID generated, origin receives request.
 
-### Act 2: Real WAF Threat Interception & Real-Time Telemetry (0:30 - 1:15)
+### Act 2: Real WAF Threat Interception & Explainable Risk Scoring (0:30 - 1:15)
 1. Send controlled web attack requests through AEGIS Gateway:
    - **SQL Injection:** `GET http://localhost:8080/products?category=%27%20OR%201=1--`
    - **Cross-Site Scripting:** `GET http://localhost:8080/products?q=%3Cscript%3Ealert(1)%3C/script%3E`
@@ -23,8 +23,14 @@ Demonstrate real-time adaptive defense, automated behavioral detection (AgentShi
    - In-memory origin tracking confirms: **0 requests reached the origin application**.
    - Audit log watcher tails Coraza audit JSON in real time.
    - Event pipeline normalizes event, computes deduplication signature, and stores in PostgreSQL `security_events`.
-   - WebSocket broadcaster streams event live to SOC Dashboard without page reload!
-   - Operator clicks event in SOC Dashboard to inspect structured details, rule ID, and verify "Origin Reached: NO".
+   - **Deterministic Risk Engine** evaluates normalized telemetry within a 60-second temporal window, deriving a threat score (0–100) and severity classification.
+   - Transparent risk signals are decomposed:
+     - `waf_severity` (+30 for Critical)
+     - `known_attack_rule` (+20 for OWASP CRS SQLi/XSS/LFI/RCE rule ID)
+     - `elevated_anomaly_score` (+10 for anomaly score >= 5)
+   - Real-time risk assessment is persisted in `risk_assessments` table.
+   - WebSocket broadcaster streams `RISK_SCORE_UPDATE` and `SECURITY_EVENT` live to SOC Dashboard without page reload!
+   - Operator views the interactive **Risk Engine Gauge & Signals Panel** on the SOC Dashboard, drilling down into transparent reasons and mathematical score breakdown.
 
 ### Act 3: Recon & Automated Attack Simulation (1:15 - 1:45)
 1. Trigger safe automated attack sequence:

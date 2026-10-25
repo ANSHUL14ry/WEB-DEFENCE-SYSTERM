@@ -63,9 +63,28 @@ def init_db():
                 CREATE INDEX IF NOT EXISTS idx_sec_events_event_type ON security_events(event_type);
                 CREATE INDEX IF NOT EXISTS idx_sec_events_component ON security_events(component);
                 CREATE INDEX IF NOT EXISTS idx_sec_events_created_at ON security_events(created_at DESC);
+
+                CREATE TABLE IF NOT EXISTS risk_assessments (
+                    assessment_id VARCHAR(64) PRIMARY KEY,
+                    request_id VARCHAR(64) NOT NULL,
+                    trace_id VARCHAR(64) NOT NULL,
+                    session_id VARCHAR(64),
+                    risk_score INT NOT NULL,
+                    severity VARCHAR(32) NOT NULL,
+                    confidence NUMERIC(4, 2) DEFAULT 1.00,
+                    signals JSONB DEFAULT '[]'::jsonb,
+                    engine_version VARCHAR(32) NOT NULL DEFAULT 'risk-engine-v1',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_risk_req_id ON risk_assessments(request_id);
+                CREATE INDEX IF NOT EXISTS idx_risk_trace_id ON risk_assessments(trace_id);
+                CREATE INDEX IF NOT EXISTS idx_risk_severity ON risk_assessments(severity);
+                CREATE INDEX IF NOT EXISTS idx_risk_score ON risk_assessments(risk_score);
+                CREATE INDEX IF NOT EXISTS idx_risk_created_at ON risk_assessments(created_at DESC);
             """))
             conn.commit()
-            logger.info("Security events table and indexes verified.")
+            logger.info("Security events and risk assessments tables and indexes verified.")
     except Exception as e:
-        logger.error(f"Failed to initialize security_events table: {e}")
+        logger.error(f"Failed to initialize database tables: {e}")
 

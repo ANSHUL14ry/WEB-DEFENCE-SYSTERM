@@ -11,6 +11,7 @@ from database import SessionLocal
 from config import settings
 from models.events import map_waf_severity, sanitize_value
 from broadcaster import broadcaster
+from risk_engine.service import assess_event_risk
 
 logger = logging.getLogger("aegis.waf_watcher")
 
@@ -228,6 +229,26 @@ async def start_waf_log_watcher():
                                 "created_at": datetime.now(timezone.utc).isoformat()
                             }
                             await broadcaster.broadcast(normalized_broadcast)
+
+                            # Phase 5: Automatic Risk Engine Evaluation (Failure-Safe)
+                            try:
+                                risk_assessment = assess_event_risk(normalized_broadcast, db)
+                                if risk_assessment:
+                                    risk_update = {
+                                        "event_type": "RISK_SCORE_UPDATE",
+                                        "assessment_id": risk_assessment["assessment_id"],
+                                        "request_id": risk_assessment["request_id"],
+                                        "trace_id": risk_assessment["trace_id"],
+                                        "risk_score": risk_assessment["risk_score"],
+                                        "severity": risk_assessment["severity"],
+                                        "confidence": risk_assessment["confidence"],
+                                        "signals": risk_assessment["signals"],
+                                        "engine_version": risk_assessment["engine_version"],
+                                        "timestamp": risk_assessment["created_at"]
+                                    }
+                                    await broadcaster.broadcast(risk_update)
+                            except Exception as risk_err:
+                                logger.error(f"Automatic risk evaluation failed for WAF event (failure-safe): {risk_err}")
 
                     except Exception as db_err:
                         db.rollback()

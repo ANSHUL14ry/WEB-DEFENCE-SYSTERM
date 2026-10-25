@@ -39,6 +39,35 @@ export interface EventStats {
   by_severity: Record<string, number>;
 }
 
+export interface RiskSignal {
+  name: string;
+  score: number;
+  reason: string;
+}
+
+export interface RiskAssessment {
+  assessment_id: string;
+  request_id: string;
+  trace_id: string;
+  session_id?: string | null;
+  risk_score: number;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  confidence: number;
+  signals: RiskSignal[];
+  engine_version: string;
+  created_at: string;
+}
+
+export interface RiskStats {
+  total_assessments: number;
+  average_risk_score: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  latest_assessments: RiskAssessment[];
+}
+
 export interface SystemStatusData {
   status: string;
   platform: string;
@@ -62,6 +91,7 @@ export interface SystemStatusData {
     system_events_count: number;
     waf_events_count?: number;
     security_events_count?: number;
+    risk_assessments_count?: number;
     recent_events: Array<{
       service_name: string;
       event_type: string;

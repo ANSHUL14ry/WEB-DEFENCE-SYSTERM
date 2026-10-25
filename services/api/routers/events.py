@@ -23,6 +23,7 @@ from models.events import (
     sanitize_value
 )
 from broadcaster import broadcaster
+from risk_engine.service import assess_event_risk
 
 logger = logging.getLogger("aegis.event_pipeline")
 
@@ -136,6 +137,27 @@ async def ingest_security_event(event: SecurityEventCreate, db: Session = Depend
         if is_new:
             await broadcaster.broadcast(normalized_event)
             logger.info(f"Ingested & broadcast security event [{event.event_type}] {event_id} ({event.severity})")
+
+            # Phase 5: Automatic Risk Engine Evaluation (Failure-Safe)
+            try:
+                risk_assessment = assess_event_risk(normalized_event, db)
+                if risk_assessment:
+                    risk_update = {
+                        "event_type": "RISK_SCORE_UPDATE",
+                        "assessment_id": risk_assessment["assessment_id"],
+                        "request_id": risk_assessment["request_id"],
+                        "trace_id": risk_assessment["trace_id"],
+                        "risk_score": risk_assessment["risk_score"],
+                        "severity": risk_assessment["severity"],
+                        "confidence": risk_assessment["confidence"],
+                        "signals": risk_assessment["signals"],
+                        "engine_version": risk_assessment["engine_version"],
+                        "timestamp": risk_assessment["created_at"]
+                    }
+                    await broadcaster.broadcast(risk_update)
+            except Exception as risk_err:
+                logger.error(f"Automatic risk evaluation failed (failure-safe): {risk_err}")
+
             return {"status": "ingested", "event_id": event_id, "is_new": True}
         else:
             logger.debug(f"Duplicate event skipped: {event_id}")

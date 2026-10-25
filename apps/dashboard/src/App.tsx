@@ -3,9 +3,10 @@ import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { SystemHealthCard } from './components/SystemHealthCard';
 import { TrafficFlowDiagram } from './components/TrafficFlowDiagram';
+import { RiskEnginePanel } from './components/RiskEnginePanel';
 import { SecurityEventsStream } from './components/SecurityEventsStream';
 import { SystemStatusData } from './types';
-import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert, Radio } from 'lucide-react';
+import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert, Radio, Flame } from 'lucide-react';
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? `http://${window.location.hostname}:8001`
@@ -77,59 +78,74 @@ export const App: React.FC = () => {
           )}
 
           {/* Quick Metrics Banner */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
               <div>
-                <span className="text-slate-400 text-xs font-mono">GATEWAY INGRESS</span>
-                <div className="text-xl font-bold font-mono text-white mt-1">PORT 8080</div>
-                <span className="text-[10px] text-cyan-400 font-mono">Proxy & Tracing Active</span>
+                <span className="text-slate-400 text-[11px] font-mono uppercase">GATEWAY INGRESS</span>
+                <div className="text-xl font-bold font-mono text-white mt-0.5">PORT 8080</div>
+                <span className="text-[10px] text-cyan-400 font-mono">Proxy & Tracing</span>
               </div>
-              <div className="p-3 bg-cyan-950 rounded-lg border border-cyan-800">
+              <div className="p-2.5 bg-cyan-950 rounded-lg border border-cyan-800">
                 <ShieldCheck className="w-5 h-5 text-cyan-400" />
               </div>
             </div>
 
-            <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
               <div>
-                <span className="text-slate-400 text-xs font-mono">WAF / CRS DEFENSE</span>
-                <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+                <span className="text-slate-400 text-[11px] font-mono uppercase">WAF / CRS DEFENSE</span>
+                <div className="text-xl font-bold font-mono text-amber-400 mt-0.5">
                   {systemData?.services.waf.mode ?? 'BLOCK'} MODE
                 </div>
                 <span className="text-[10px] text-amber-300 font-mono">
-                  {systemData?.metrics.waf_events_count ?? 0} Threats Intercepted
+                  {systemData?.metrics.waf_events_count ?? 0} Threats Stopped
                 </span>
               </div>
-              <div className="p-3 bg-amber-950 rounded-lg border border-amber-800">
+              <div className="p-2.5 bg-amber-950 rounded-lg border border-amber-800">
                 <ShieldAlert className="w-5 h-5 text-amber-400" />
               </div>
             </div>
 
-            <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
               <div>
-                <span className="text-slate-400 text-xs font-mono">EVENT PIPELINE</span>
-                <div className="text-xl font-bold font-mono text-cyan-400 mt-1">
+                <span className="text-slate-400 text-[11px] font-mono uppercase">EVENT PIPELINE</span>
+                <div className="text-xl font-bold font-mono text-cyan-400 mt-0.5">
                   {systemData?.metrics.security_events_count ?? 0}
                 </div>
                 <span className="text-[10px] text-cyan-300 font-mono">
                   Normalized & Correlated
                 </span>
               </div>
-              <div className="p-3 bg-cyan-950 rounded-lg border border-cyan-800">
+              <div className="p-2.5 bg-cyan-950 rounded-lg border border-cyan-800">
                 <Radio className="w-5 h-5 text-cyan-400" />
               </div>
             </div>
 
-            <div className="bg-soc-panel border border-soc-border rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
               <div>
-                <span className="text-slate-400 text-xs font-mono">DATABASE STATE</span>
-                <div className="text-xl font-bold font-mono text-white mt-1">
+                <span className="text-slate-400 text-[11px] font-mono uppercase">RISK ENGINE</span>
+                <div className="text-xl font-bold font-mono text-rose-400 mt-0.5">
+                  {systemData?.metrics.risk_assessments_count ?? 0}
+                </div>
+                <span className="text-[10px] text-rose-300 font-mono">
+                  Deterministic Scores
+                </span>
+              </div>
+              <div className="p-2.5 bg-rose-950 rounded-lg border border-rose-800">
+                <Flame className="w-5 h-5 text-rose-400" />
+              </div>
+            </div>
+
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
+              <div>
+                <span className="text-slate-400 text-[11px] font-mono uppercase">DATABASE STATE</span>
+                <div className="text-xl font-bold font-mono text-white mt-0.5">
                   {systemData?.services.database.status === 'connected' ? 'CONNECTED' : 'STANDBY'}
                 </div>
                 <span className="text-[10px] text-slate-400 font-mono">
-                  {systemData?.metrics.system_events_count ?? 0} System Events
+                  PostgreSQL 16 Store
                 </span>
               </div>
-              <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
+              <div className="p-2.5 bg-slate-900 rounded-lg border border-slate-800">
                 <Database className="w-5 h-5 text-slate-300" />
               </div>
             </div>
@@ -137,6 +153,9 @@ export const App: React.FC = () => {
 
           {/* Traffic Flow Pipeline Component */}
           <TrafficFlowDiagram />
+
+          {/* Explainable Risk Engine Component (Phase 5) */}
+          <RiskEnginePanel apiBase={API_BASE} />
 
           {/* Real-time Security Events Pipeline & Telemetry Stream (Phase 4) */}
           <SecurityEventsStream apiBase={API_BASE} />

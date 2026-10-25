@@ -116,6 +116,20 @@ CREATE TABLE IF NOT EXISTS security_events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 9. Risk Assessments (Explainable Risk Engine Store)
+CREATE TABLE IF NOT EXISTS risk_assessments (
+    assessment_id VARCHAR(64) PRIMARY KEY,
+    request_id VARCHAR(64) NOT NULL,
+    trace_id VARCHAR(64) NOT NULL,
+    session_id VARCHAR(64),
+    risk_score INT NOT NULL,
+    severity VARCHAR(32) NOT NULL,
+    confidence NUMERIC(4, 2) DEFAULT 1.00,
+    signals JSONB DEFAULT '[]'::jsonb,
+    engine_version VARCHAR(32) NOT NULL DEFAULT 'risk-engine-v1',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_traffic_req_id ON traffic_logs(request_id);
 CREATE INDEX IF NOT EXISTS idx_traffic_source_ip ON traffic_logs(source_ip);
@@ -135,3 +149,8 @@ CREATE INDEX IF NOT EXISTS idx_sec_events_severity ON security_events(severity);
 CREATE INDEX IF NOT EXISTS idx_sec_events_event_type ON security_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_sec_events_component ON security_events(component);
 CREATE INDEX IF NOT EXISTS idx_sec_events_created_at ON security_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_risk_req_id ON risk_assessments(request_id);
+CREATE INDEX IF NOT EXISTS idx_risk_trace_id ON risk_assessments(trace_id);
+CREATE INDEX IF NOT EXISTS idx_risk_severity ON risk_assessments(severity);
+CREATE INDEX IF NOT EXISTS idx_risk_score ON risk_assessments(risk_score);
+CREATE INDEX IF NOT EXISTS idx_risk_created_at ON risk_assessments(created_at DESC);
