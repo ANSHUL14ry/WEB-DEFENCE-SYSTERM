@@ -1,18 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { RiskAssessment, RiskStats, RiskSignal } from '../types';
+import { RiskAssessment, RiskStats } from '../types';
 import { 
   Flame, 
   ShieldCheck, 
-  AlertTriangle, 
-  Gauge, 
   Activity, 
   Layers, 
   Radio, 
   ExternalLink, 
   X, 
   Copy, 
-  Check, 
-  Cpu
+  Check 
 } from 'lucide-react';
 
 interface RiskEnginePanelProps {
@@ -21,7 +18,6 @@ interface RiskEnginePanelProps {
 
 export const RiskEnginePanel: React.FC<RiskEnginePanelProps> = ({ apiBase }) => {
   const [stats, setStats] = useState<RiskStats | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [selectedAssessment, setSelectedAssessment] = useState<RiskAssessment | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
@@ -37,8 +33,6 @@ export const RiskEnginePanel: React.FC<RiskEnginePanelProps> = ({ apiBase }) => 
       }
     } catch (err) {
       console.warn('Failed to fetch risk stats:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -140,6 +134,12 @@ export const RiskEnginePanel: React.FC<RiskEnginePanelProps> = ({ apiBase }) => 
           </div>
 
           <div className="flex items-center gap-3 text-xs font-mono">
+            <div className="px-3 py-1.5 rounded-lg bg-soc-card border border-soc-border flex items-center gap-1.5">
+              <Radio className={`w-3.5 h-3.5 ${wsConnected ? 'text-emerald-400' : 'text-slate-500'}`} />
+              <span className={wsConnected ? 'text-emerald-400' : 'text-slate-400'}>
+                {wsConnected ? 'LIVE STREAM' : 'POLLING'}
+              </span>
+            </div>
             <div className="px-3 py-1.5 rounded-lg bg-soc-card border border-soc-border flex items-center gap-2">
               <span className="text-slate-400">Total Assessments:</span>
               <span className="font-bold text-white">{stats?.total_assessments ?? 0}</span>

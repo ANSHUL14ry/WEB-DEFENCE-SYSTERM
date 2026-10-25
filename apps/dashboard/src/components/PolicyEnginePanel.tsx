@@ -3,11 +3,7 @@ import { PolicyDecisionRecord, PolicyStats } from '../types';
 import { 
   Scale, 
   ShieldAlert, 
-  ShieldCheck, 
-  AlertTriangle, 
   Radio, 
-  Layers, 
-  Cpu, 
   Info, 
   X, 
   ExternalLink, 
@@ -26,7 +22,6 @@ interface PolicyEnginePanelProps {
 
 export const PolicyEnginePanel: React.FC<PolicyEnginePanelProps> = ({ apiBase }) => {
   const [stats, setStats] = useState<PolicyStats | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [selectedDecision, setSelectedDecision] = useState<PolicyDecisionRecord | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
 
@@ -41,8 +36,6 @@ export const PolicyEnginePanel: React.FC<PolicyEnginePanelProps> = ({ apiBase })
       }
     } catch (err) {
       console.warn('Failed to fetch Policy stats:', err);
-    } finally {
-      setLoading(false);
     }
   };
 

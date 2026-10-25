@@ -76,6 +76,7 @@ async def analyze_behavior_on_demand(payload: Dict[str, Any], db: Session = Depe
 
 
 @router.get("/agent-shield/stats")
+@router.get("/agentshield/stats", include_in_schema=False)
 def get_agent_shield_stats(db: Session = Depends(get_db)):
     """
     Aggregated live AgentShield statistics directly from PostgreSQL.

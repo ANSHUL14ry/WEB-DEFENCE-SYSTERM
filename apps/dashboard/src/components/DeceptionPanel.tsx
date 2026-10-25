@@ -3,16 +3,9 @@ import {
   ShieldAlert, 
   Flame, 
   Terminal, 
-  Lock, 
-  Eye, 
-  CheckCircle2, 
-  Clock, 
-  Server, 
-  AlertTriangle,
-  ArrowRight,
-  Database,
-  RefreshCw,
-  Layers,
+  Database, 
+  RefreshCw, 
+  Layers, 
   FileText
 } from 'lucide-react';
 import { DeceptionSession, DeceptionEvent, DeceptionStats } from '../types';
@@ -32,7 +25,6 @@ export const DeceptionPanel: React.FC<DeceptionPanelProps> = ({ apiBase, realtim
   const [activeSession, setActiveSession] = useState<DeceptionSession | null>(null);
   const [sessionEvents, setSessionEvents] = useState<DeceptionEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<DeceptionEvent | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
 
   const fetchDeceptionData = async () => {
     try {
@@ -48,8 +40,6 @@ export const DeceptionPanel: React.FC<DeceptionPanelProps> = ({ apiBase, realtim
       }
     } catch (err) {
       console.error('Failed to fetch deception stats:', err);
-    } finally {
-      setLoading(false);
     }
   };
 

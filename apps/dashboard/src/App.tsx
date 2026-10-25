@@ -13,8 +13,6 @@ import { SecurityEventsStream } from './components/SecurityEventsStream';
 import { SystemStatusData } from './types';
 import { 
   ShieldCheck, 
-  Database, 
-  Layers, 
   Terminal, 
   AlertCircle, 
   ShieldAlert, 
@@ -25,7 +23,6 @@ import {
   EyeOff, 
   CheckCircle2, 
   Crosshair, 
-  Activity,
   ArrowRight
 } from 'lucide-react';
 
@@ -167,7 +164,7 @@ export const App: React.FC = () => {
                     <span>SYSTEM STATUS: OPERATIONAL</span>
                   </div>
                   <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 text-xs font-mono">
-                    WS: {wsConnected ? <span className="text-emerald-400">STREAMING</span> : <span className="text-amber-400">CONNECTING</span>}
+                    WS: {wsConnected ? <span className="text-emerald-400">STREAMING</span> : <span className="text-amber-400">CONNECTING</span>} &bull; Synced: {lastSynced}
                   </div>
                 </div>
               </div>

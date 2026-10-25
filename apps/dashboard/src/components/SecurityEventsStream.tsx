@@ -4,16 +4,13 @@ import {
   ShieldAlert, 
   ShieldCheck, 
   AlertTriangle, 
-  Info, 
   Radio, 
-  Filter, 
   Search, 
   ExternalLink, 
   X, 
   Copy, 
   Check, 
-  Activity,
-  Server,
+  Activity, 
   Zap
 } from 'lucide-react';
 

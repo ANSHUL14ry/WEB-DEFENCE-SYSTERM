@@ -4,18 +4,11 @@ import {
   XCircle, 
   AlertCircle, 
   ShieldCheck, 
-  Database, 
-  Server, 
-  Lock, 
-  Eye, 
   RefreshCw, 
   FileText, 
-  ExternalLink, 
   X, 
   Copy, 
-  Check, 
-  Layers, 
-  ArrowRight
+  Check
 } from 'lucide-react';
 import { VerificationStats, VerificationResultRecord } from '../types';
 

@@ -11,10 +11,8 @@ import {
   FileText, 
   ShieldCheck, 
   CheckCircle2, 
-  ArrowDown, 
   Check, 
   Clock,
-  Sparkles,
   Server,
   Layers
 } from 'lucide-react';

@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AgentShieldAssessment, AgentShieldStats, AgentShieldSignal } from '../types';
+import { AgentShieldAssessment, AgentShieldStats } from '../types';
 import { 
   Bot, 
   ShieldAlert, 
-  ShieldCheck, 
-  AlertTriangle, 
   Activity, 
   Radio, 
   Layers, 
@@ -15,8 +13,6 @@ import {
   Terminal, 
   Info, 
   X, 
-  Copy, 
-  Check, 
   Clock, 
   ExternalLink 
 } from 'lucide-react';
@@ -27,9 +23,7 @@ interface AgentShieldPanelProps {
 
 export const AgentShieldPanel: React.FC<AgentShieldPanelProps> = ({ apiBase }) => {
   const [stats, setStats] = useState<AgentShieldStats | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [selectedAssessment, setSelectedAssessment] = useState<AgentShieldAssessment | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState<boolean>(false);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -43,8 +37,6 @@ export const AgentShieldPanel: React.FC<AgentShieldPanelProps> = ({ apiBase }) =
       }
     } catch (err) {
       console.warn('Failed to fetch AgentShield stats:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -117,12 +109,6 @@ export const AgentShieldPanel: React.FC<AgentShieldPanelProps> = ({ apiBase }) =
       if (wsRef.current) wsRef.current.close();
     };
   }, [apiBase]);
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
 
   const latestAssessment = stats?.recent_assessments?.[0] || null;
   const currentScore = latestAssessment ? latestAssessment.agent_shield_score : 0;

@@ -2,14 +2,12 @@ import React from 'react';
 import { 
   Activity, 
   ShieldAlert, 
-  Cpu, 
   EyeOff, 
   CheckCircle2, 
   Crosshair, 
   Bot, 
-  Server,
-  Layers,
-  Flame,
+  Layers, 
+  Flame, 
   Scale
 } from 'lucide-react';
 
