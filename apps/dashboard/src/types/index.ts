@@ -86,6 +86,8 @@ export interface SystemStatusData {
     agent_shield: ServiceStatus;
     risk_engine: ServiceStatus;
     policy_engine?: ServiceStatus;
+    deception_engine?: ServiceStatus;
+    verification_engine?: ServiceStatus;
     honeypot: ServiceStatus;
   };
   metrics: {
@@ -96,6 +98,8 @@ export interface SystemStatusData {
     agent_shield_assessments_count?: number;
     policy_decisions_count?: number;
     deception_sessions_count?: number;
+    verifications_count?: number;
+    verified_mitigations_count?: number;
     recent_events: Array<{
       service_name: string;
       event_type: string;
@@ -234,5 +238,38 @@ export interface DeceptionStats {
   total_evidence_events: number;
   recent_sessions: DeceptionSession[];
   recent_events: DeceptionEvent[];
+  disclaimer: string;
+}
+
+export interface VerificationResultRecord {
+  verification_id: string;
+  request_id: string;
+  trace_id: string;
+  session_id?: string | null;
+  policy_decision_id?: string | null;
+  verification_type: string;
+  expected_action: string;
+  actual_action: string;
+  expected_origin_access: boolean;
+  actual_origin_access: boolean;
+  origin_request_count: number;
+  deception_session_id?: string | null;
+  evidence_count: number;
+  database_access_detected: boolean;
+  result: 'VERIFIED' | 'FAILED' | 'INCONCLUSIVE';
+  confidence: number;
+  proof: string[];
+  failure_reason?: string | null;
+  engine_version: string;
+  created_at: string;
+}
+
+export interface VerificationStats {
+  total_verifications: number;
+  verified_count: number;
+  failed_count: number;
+  inconclusive_count: number;
+  verified_percentage: number;
+  recent_verifications: VerificationResultRecord[];
   disclaimer: string;
 }

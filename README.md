@@ -8,6 +8,7 @@
 [![Phase 6 Status](https://img.shields.io/badge/Phase%206-AgentShield%20Verified-emerald?style=flat-square)](.)
 [![Phase 7 Status](https://img.shields.io/badge/Phase%207-Policy%20Engine%20Verified-emerald?style=flat-square)](.)
 [![Phase 8 Status](https://img.shields.io/badge/Phase%208-Adaptive%20Deception%20Verified-emerald?style=flat-square)](.)
+[![Phase 9 Status](https://img.shields.io/badge/Phase%209-Response%20Verification%20Verified-emerald?style=flat-square)](docs/phase-9-verification.md)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
@@ -273,7 +274,27 @@ Phase 8 implements the **Deceive** layer of the *Detect → Analyze → Decide �
 
 ---
 
-## 10. Phase-by-Phase Roadmap
+## 10. Phase 9: Response Verification & Telemetry Proof Engine
+
+Phase 9 implements the final **Verify & Prove** operational layer of the *Detect &rarr; Analyze &rarr; Decide &rarr; Deceive &rarr; Verify* pipeline:
+1. **Mathematical Verification Rules**:
+   - `RULE 1 (WAF Block)`: Verifies HTTP 403, 0 origin hits, and 0 deception sessions.
+   - `RULE 2 (Normal Allow)`: Verifies traffic reached the origin workload without diversion to deception.
+   - `RULE 3 (Policy Block)`: Verifies terminal blocking at ingress with 0 origin hits.
+   - `RULE 4 (Adaptive Deception)`: Verifies isolated decoy interaction on `deception-net`, 0 origin requests, and zero production database access.
+   - `RULE 5 (Deception Failure)`: Verifies zero origin fallback invariant if the decoy container encounters an anomaly.
+2. **PostgreSQL Relational Verification Receipts**:
+   - Persisted in table `verification_results` with structured JSON proof points, confidence scores, and invariant checks.
+3. **Interactive SOC Dashboard & Attack Story**:
+   - `VerificationPanel.tsx`: Interactive verification receipts list, real-time metrics, and proof inspection modal.
+   - `AttackStoryVisualizer.tsx`: Step-by-step incident timeline tracing the journey from recon to mitigation receipt.
+4. **Automated Verification Coverage**:
+   - 17 dedicated Phase 9 integration tests (`test_phase9_verification.py`).
+   - 130 total tests passing (100% regression suite).
+
+---
+
+## 11. Phase-by-Phase Roadmap
 
 - [x] **Phase 1: Foundation** (Docker Compose, Gateway, FastAPI, PostgreSQL, Origin, Dashboard Skeleton, Tests)
 - [x] **Phase 2: Gateway Hardening & Tracing** (Request ID validation, trace ID, JSON logs, security headers, limits, timeouts)
@@ -283,7 +304,7 @@ Phase 8 implements the **Deceive** layer of the *Detect → Analyze → Decide �
 - [x] **Phase 6: AgentShield** (Behavioral sequence analysis & agentic pattern detection)
 - [x] **Phase 7: Policy Engine** (Deterministic decision layer, terminal WAF invariant, deception qualification)
 - [x] **Phase 8: Adaptive Honeypot** (Synthetic decoys: `/decoy-admin`, `/decoy-api`, isolated Docker network)
-- [ ] **Phase 9: Response Verification** (Origin impact validation & verification receipts)
+- [x] **Phase 9: Response Verification** (Origin impact validation & verification receipts)
 - [ ] **Phase 10: SOC Dashboard Completion** (Threat feed, kill chain, deception panel)
 - [ ] **Phase 11: AI SOC Copilot** (Evidence-based plain English incident explainer)
 - [ ] **Phase 12: Demo Store** (Simulated e-commerce web app for live demonstrations)

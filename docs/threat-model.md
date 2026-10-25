@@ -61,3 +61,12 @@ All attack simulation tools provided within this platform operate strictly in sa
 5. **Invariant 5: Deception Failure $\rightarrow$ No Origin Fallback:** If the deception container crashes or fails, the request is terminated with `DECEPTION_FAILED`. It **NEVER** silently falls back to the real origin.
 6. **Invariant 6: Client Cannot Directly Activate Deception:** Decoy execution APIs reject client-supplied headers (e.g. `X-Deceive: true`). Only verified backend policy decisions (`DECEIVE_ELIGIBLE`) can trigger deception.
 7. **Invariant 7: Sensitive Data $\rightarrow$ Sanitized Evidence:** Passwords, authentication headers, and tokens are scrubbed from evidence logs before database persistence. Raw credentials are never stored.
+
+---
+
+## 5. Response Verification & Telemetry Proof Invariants (Phase 9)
+
+1. **Invariant 8: Verification Requires Verifiable Telemetry:** AEGIS never fabricates verification receipts. A verification receipt is marked `VERIFIED` only if corroborated by immutable telemetry stored in PostgreSQL.
+2. **Invariant 9: Origin Protection Machine Guarantee:** If any defensive action was taken (`WAF_BLOCK`, `POLICY_BLOCK`, `DECEPTION`), the Proof Engine validates that `origin_request_count == 0`. Any non-zero count yields an immediate `FAILED` result.
+3. **Invariant 10: Inconclusive on Data Gap:** If telemetry logs are missing or checksum validation detects corruption, the result is explicitly marked `INCONCLUSIVE` rather than assuming success.
+4. **Invariant 11: Zero Machine Learning in Security Verdicts:** Verification and mitigation proofs evaluate strictly deterministic mathematical assertions. No LLM or black-box ML inference is permitted to decide verification status.

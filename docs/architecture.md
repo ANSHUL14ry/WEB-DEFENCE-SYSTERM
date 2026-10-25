@@ -295,6 +295,19 @@ SOC Dashboard Live Telemetry
 - **Real-Time SOC Streaming**:
   - Multicasts `DECEPTION_EVENT` over WebSockets to update the interactive `DeceptionPanel.tsx` in real time.
 
+### 3.12 Response Verification & Telemetry Proof Engine (`services/api/verification/`) — Phase 9 Active
+- **Subsystem Purpose**: Implements the final **Verify & Prove** operational layer of the *Detect → Analyze → Decide → Deceive → Verify* pipeline. Produces deterministic, machine-verifiable operational receipts proving whether defensive actions successfully prevented attacker interaction with the real upstream application.
+- **Strict Invariant Verification Rules**:
+  - `RULE 1 (WAF Block)`: Evaluates `waf_blocked == True`. Verifies HTTP 403, 0 origin requests, and zero deception sessions (`VERIFIED`).
+  - `RULE 2 (Normal Allow)`: Evaluates `policy == ALLOW`. Verifies traffic reached protected origin application (`VERIFIED`).
+  - `RULE 3 (Policy Block)`: Evaluates `policy in [BLOCK, CONTAIN]`. Verifies 0 origin hits (`VERIFIED`).
+  - `RULE 4 (Adaptive Deception)`: Evaluates `policy == DECEIVE_ELIGIBLE`. Verifies active decoy session on `deception-net`, captured evidence events, 0 origin hits, and zero production database queries (`VERIFIED`).
+  - `RULE 5 (Decoy Failure Safety)`: Evaluates `decoy_failed == True`. Verifies zero origin fallback invariant (`FAILED` with origin held).
+- **Machine-Verifiable Proof Receipts (`verification_results`)**:
+  - Persisted in PostgreSQL table `verification_results` (`verification_id`, `request_id`, `trace_id`, `expected_action`, `actual_action`, `actual_origin_access`, `origin_request_count`, `deception_session_id`, `evidence_count`, `database_access_detected`, `result`, `confidence`, `proof` JSONB, `engine_version: "verification-v1"`).
+- **Real-Time SOC Streaming**:
+  - Broadcasts `MITIGATION_VERIFIED`, `MITIGATION_FAILED`, and `MITIGATION_INCONCLUSIVE` over WebSocket (`/api/v1/ws/events`) to the SOC Dashboard's interactive `VerificationPanel.tsx` and `AttackStoryVisualizer.tsx`.
+
 ---
 
 ## 4. Network Isolation Architecture

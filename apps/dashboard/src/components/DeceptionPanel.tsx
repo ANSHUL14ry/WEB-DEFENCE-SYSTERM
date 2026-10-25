@@ -18,10 +18,16 @@ import {
 import { DeceptionSession, DeceptionEvent, DeceptionStats } from '../types';
 
 interface DeceptionPanelProps {
+  apiBase?: string;
   realtimeEvent?: any;
 }
 
-export const DeceptionPanel: React.FC<DeceptionPanelProps> = ({ realtimeEvent }) => {
+export const DeceptionPanel: React.FC<DeceptionPanelProps> = ({ apiBase, realtimeEvent }) => {
+  const resolvedBase = apiBase || (
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? `http://${window.location.hostname}:8001`
+      : '/api'
+  );
   const [stats, setStats] = useState<DeceptionStats | null>(null);
   const [activeSession, setActiveSession] = useState<DeceptionSession | null>(null);
   const [sessionEvents, setSessionEvents] = useState<DeceptionEvent[]>([]);
@@ -30,7 +36,7 @@ export const DeceptionPanel: React.FC<DeceptionPanelProps> = ({ realtimeEvent })
 
   const fetchDeceptionData = async () => {
     try {
-      const res = await fetch('/api/v1/deception/stats');
+      const res = await fetch(`${resolvedBase}/api/v1/deception/stats`);
       if (res.ok) {
         const data: DeceptionStats = await res.json();
         setStats(data);
@@ -49,7 +55,7 @@ export const DeceptionPanel: React.FC<DeceptionPanelProps> = ({ realtimeEvent })
 
   const fetchSessionTimeline = async (sessionId: string) => {
     try {
-      const res = await fetch(`/api/v1/deception/session/${sessionId}/events`);
+      const res = await fetch(`${resolvedBase}/api/v1/deception/session/${sessionId}/events`);
       if (res.ok) {
         const events: DeceptionEvent[] = await res.json();
         setSessionEvents(events);

@@ -77,5 +77,18 @@ Demonstrate real-time adaptive defense, automated behavioral detection (AgentShi
 4. **Origin Protection Verified**:
    - Operator checks Origin logs: **0 requests hit the production origin application**. The attacker is completely contained within the synthetic sandbox.
 
-### Act 6: Response Verification (Phase 9 Roadmap)
-1. Cryptographic mitigation proof and verification receipts generated for compliance.
+### Act 6: Response Verification & Telemetry Proof Engine (2:40 - 3:00) — Phase 9 Active
+1. **Mathematical Invariant Verification**:
+   - The Proof Engine evaluates PostgreSQL access receipts and verifies that `origin_request_count == 0` for all blocked and deceived traffic.
+   - Origin application workload remains 100% untouched.
+   - Decoy database queries evaluated: 0 access to production database.
+2. **Mitigation Receipt Generated**:
+   - The system creates a machine-verifiable proof object with cryptographic confidence (100%).
+   - Status: `VERIFIED`.
+3. **Interactive SOC Proof Modal & Attack Story**:
+   - Operator clicks **Inspect Proof** on the SOC Dashboard's **Mitigation Proof Panel** (`/verification`).
+   - Modal displays the machine-checked receipt with exact request/trace ID, policy decision, decoy session ID, origin access (0 requests), and 5 deterministic proof statements.
+   - Operator views the **Attack Story Timeline** tracing the end-to-end incident lifecycle from recon to verified containment.
+4. **Final Judge-Facing Takeaway**:
+   - *"The attacker reaches AEGIS, not the application."*
+   - *"AEGIS understands attack behavior, dynamically decides how to respond, diverts the attacker into an isolated synthetic environment, and produces verifiable operational evidence that the real application remained untouched."*

@@ -18,6 +18,8 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
     agent_shield_assessments_count = 0
     policy_decisions_count = 0
     deception_sessions_count = 0
+    verifications_count = 0
+    verified_mitigations_count = 0
     recent_events = []
     
     if db_ok:
@@ -42,6 +44,12 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
 
             res_deception = db.execute(text("SELECT COUNT(*) FROM deception_sessions")).scalar()
             deception_sessions_count = int(res_deception) if res_deception is not None else 0
+
+            res_ver = db.execute(text("SELECT COUNT(*) FROM verification_results")).scalar()
+            verifications_count = int(res_ver) if res_ver is not None else 0
+
+            res_ver_ok = db.execute(text("SELECT COUNT(*) FROM verification_results WHERE result = 'VERIFIED'")).scalar()
+            verified_mitigations_count = int(res_ver_ok) if res_ver_ok is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -114,6 +122,12 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
                 "role": "Adaptive Deception & Honeypot Routing",
                 "version": "Phase 8 Active"
             },
+            "verification_engine": {
+                "status": "operational",
+                "type": "Response Verification & Telemetry Proof Engine",
+                "role": "Deterministic Mitigation Verification & Origin Protection Proof",
+                "version": "Phase 9 Active"
+            },
             "honeypot": {"status": "operational", "type": "Isolated Decoy Environment", "role": "Phase 8 Active"}
         },
         "metrics": {
@@ -124,6 +138,8 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
             "agent_shield_assessments_count": agent_shield_assessments_count,
             "policy_decisions_count": policy_decisions_count,
             "deception_sessions_count": deception_sessions_count,
+            "verifications_count": verifications_count,
+            "verified_mitigations_count": verified_mitigations_count,
             "recent_events": recent_events
         }
     }
