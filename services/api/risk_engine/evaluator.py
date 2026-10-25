@@ -38,11 +38,13 @@ def get_severity_for_score(score: int) -> str:
 
 def evaluate_risk(
     target_event: Dict[str, Any],
-    historical_events: Optional[List[Dict[str, Any]]] = None
+    historical_events: Optional[List[Dict[str, Any]]] = None,
+    agent_shield_data: Optional[Dict[str, Any]] = None
 ) -> RiskAssessmentResult:
     """
     Deterministic scoring engine.
     Produces identical scores for identical inputs.
+    Integrates AgentShield behavioral scores into overall threat risk.
     """
     signals: List[RiskSignal] = []
     historical = historical_events or []
@@ -161,6 +163,29 @@ def evaluate_risk(
             score=risk_settings.WEIGHT_PROBING_MULTIPLE_ENDPOINTS,
             reason=f"Endpoint enumeration observed: {len(visited_uris)} distinct URI paths probed across trace chain"
         ))
+
+    # 8. Phase 6: AgentShield Behavioral Automation Contribution
+    if agent_shield_data:
+        as_score = agent_shield_data.get("agent_shield_score", 0)
+        as_sev = str(agent_shield_data.get("severity", "")).upper()
+        if as_sev == "CRITICAL" or as_score >= 75:
+            signals.append(RiskSignal(
+                name="agentshield_behavior",
+                score=risk_settings.WEIGHT_AGENT_SHIELD_CRITICAL,
+                reason=f"AgentShield identified critical behavioral automation patterns (Score: {as_score})"
+            ))
+        elif as_sev == "HIGH" or as_score >= 50:
+            signals.append(RiskSignal(
+                name="agentshield_behavior",
+                score=risk_settings.WEIGHT_AGENT_SHIELD_HIGH,
+                reason=f"AgentShield identified elevated behavioral automation patterns (Score: {as_score})"
+            ))
+        elif as_sev == "MEDIUM" or as_score >= 25:
+            signals.append(RiskSignal(
+                name="agentshield_behavior",
+                score=risk_settings.WEIGHT_AGENT_SHIELD_MEDIUM,
+                reason=f"AgentShield identified moderate behavioral automation patterns (Score: {as_score})"
+            ))
 
     # Sum raw scores & cap at 100
     raw_total = sum(s.score for s in signals)

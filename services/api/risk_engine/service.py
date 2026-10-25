@@ -20,9 +20,14 @@ from broadcaster import broadcaster
 logger = logging.getLogger("aegis.risk_engine")
 
 
-def assess_event_risk(event_data: Dict[str, Any], db: Session) -> Optional[Dict[str, Any]]:
+def assess_event_risk(
+    event_data: Dict[str, Any],
+    db: Session,
+    agent_shield_data: Optional[Dict[str, Any]] = None
+) -> Optional[Dict[str, Any]]:
     """
     Evaluates an ingested security event against correlated activity in the temporal window.
+    Integrates AgentShield behavioral scores into overall risk assessment.
     Persists risk assessment and broadcasts updates to dashboard clients.
     Guaranteed failure-safe: exceptions are logged and never bubble up.
     """
@@ -70,8 +75,23 @@ def assess_event_risk(event_data: Dict[str, Any], db: Session) -> Optional[Dict[
                 "metadata": meta
             })
 
+        # Check if an AgentShield assessment exists for this request or trace if not provided
+        if not agent_shield_data:
+            as_row = db.execute(text("""
+                SELECT agent_shield_score, severity
+                FROM agent_shield_assessments
+                WHERE request_id = :req_id OR trace_id = :trace_id
+                ORDER BY created_at DESC
+                LIMIT 1;
+            """), {"req_id": req_id, "trace_id": trace_id}).fetchone()
+            if as_row:
+                agent_shield_data = {
+                    "agent_shield_score": as_row.agent_shield_score,
+                    "severity": as_row.severity
+                }
+
         # Calculate deterministic risk assessment
-        result: RiskAssessmentResult = evaluate_risk(event_data, historical_events)
+        result: RiskAssessmentResult = evaluate_risk(event_data, historical_events, agent_shield_data)
 
         assessment_id = f"risk-{uuid.uuid4().hex[:16]}"
         signals_payload = [s.model_dump() for s in result.signals]

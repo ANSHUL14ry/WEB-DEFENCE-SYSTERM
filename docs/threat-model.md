@@ -37,6 +37,12 @@ All attack simulation tools provided within this platform operate strictly in sa
 - **Server-Side Deterministic Scoring:** Clients cannot supply or manipulate risk scores; risk assessment is computed exclusively by the internal Risk Engine based on verified telemetry.
 - **Fail-Safe Isolation:** A failure in the risk evaluation engine is caught safely and cannot degrade WAF blocking capabilities or allow uninspected traffic through to origin.
 
+### 3.1 AgentShield Behavioral Integrity & Non-AI Claim Boundary
+- **Observable Heuristics vs. Speculative Attribution:** AgentShield operates strictly on observable HTTP traffic characteristics (request velocity, endpoint variety, authentication target frequency, and attack sequence progression).
+- **No Model Identity Claims:** AgentShield explicitly disclaims the ability to identify specific AI models (e.g. ChatGPT, Claude, custom LLMs) or prove that an attacker is an AI. Such claims are scientifically indefensible on HTTP request streams alone.
+- **Structural Parameter Privacy:** Parameter manipulation indicators evaluate structural keys only; actual parameter values (passwords, tokens, cookies, queries) are never stored in behavioral evidence.
+- **Subsystem Isolation:** Failure within the behavioral analyzer is safely caught and logged. Neither WAF blocking, security event persistence, nor overall platform operation can be disrupted by AgentShield errors.
+
 ---
 
 ## 4. Deception Isolation & Sandbox Principles

@@ -4,9 +4,10 @@ import { Sidebar } from './components/Sidebar';
 import { SystemHealthCard } from './components/SystemHealthCard';
 import { TrafficFlowDiagram } from './components/TrafficFlowDiagram';
 import { RiskEnginePanel } from './components/RiskEnginePanel';
+import { AgentShieldPanel } from './components/AgentShieldPanel';
 import { SecurityEventsStream } from './components/SecurityEventsStream';
 import { SystemStatusData } from './types';
-import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert, Radio, Flame } from 'lucide-react';
+import { ShieldCheck, Database, Layers, Terminal, AlertCircle, ShieldAlert, Radio, Flame, Bot } from 'lucide-react';
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? `http://${window.location.hostname}:8001`
@@ -78,7 +79,7 @@ export const App: React.FC = () => {
           )}
 
           {/* Quick Metrics Banner */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
               <div>
                 <span className="text-slate-400 text-[11px] font-mono uppercase">GATEWAY INGRESS</span>
@@ -122,6 +123,21 @@ export const App: React.FC = () => {
 
             <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
               <div>
+                <span className="text-slate-400 text-[11px] font-mono uppercase">AGENTSHIELD</span>
+                <div className="text-xl font-bold font-mono text-indigo-400 mt-0.5">
+                  {systemData?.metrics.agent_shield_assessments_count ?? 0}
+                </div>
+                <span className="text-[10px] text-indigo-300 font-mono">
+                  Behavioral Sequences
+                </span>
+              </div>
+              <div className="p-2.5 bg-indigo-950 rounded-lg border border-indigo-800">
+                <Bot className="w-5 h-5 text-indigo-400" />
+              </div>
+            </div>
+
+            <div className="bg-soc-panel border border-soc-border rounded-xl p-3.5 flex items-center justify-between">
+              <div>
                 <span className="text-slate-400 text-[11px] font-mono uppercase">RISK ENGINE</span>
                 <div className="text-xl font-bold font-mono text-rose-400 mt-0.5">
                   {systemData?.metrics.risk_assessments_count ?? 0}
@@ -153,6 +169,9 @@ export const App: React.FC = () => {
 
           {/* Traffic Flow Pipeline Component */}
           <TrafficFlowDiagram />
+
+          {/* AgentShield Behavioral Automation Engine Component (Phase 6) */}
+          <AgentShieldPanel apiBase={API_BASE} />
 
           {/* Explainable Risk Engine Component (Phase 5) */}
           <RiskEnginePanel apiBase={API_BASE} />

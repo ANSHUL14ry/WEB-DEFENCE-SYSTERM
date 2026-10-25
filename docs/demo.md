@@ -32,12 +32,28 @@ Demonstrate real-time adaptive defense, automated behavioral detection (AgentShi
    - WebSocket broadcaster streams `RISK_SCORE_UPDATE` and `SECURITY_EVENT` live to SOC Dashboard without page reload!
    - Operator views the interactive **Risk Engine Gauge & Signals Panel** on the SOC Dashboard, drilling down into transparent reasons and mathematical score breakdown.
 
-### Act 3: Recon & Automated Attack Simulation (1:15 - 1:45)
-1. Trigger safe automated attack sequence:
-   - Rapid endpoint discovery: `/robots.txt`, `/api/`, `/.env`
-   - Authentication brute force canary: `/login`
-2. SOC Dashboard lights up:
-   - AgentShield computes high automated/agentic confidence score (>90).
+### Act 3: AgentShield Behavioral Automation & Attack Sequence Analysis (1:15 - 1:45)
+1. Trigger safe automated attack progression through AEGIS Gateway:
+   - **Stage 1 (Recon):** `GET /robots.txt`
+   - **Stage 2 (Endpoint Discovery):** `GET /admin`, `GET /.env`
+   - **Stage 3 (API Enumeration):** `GET /api/users`, `GET /api/products`
+   - **Stage 4 (Auth Probing):** `POST /login` (repeated credential interface requests)
+   - **Stage 5 (WAF Intercept):** `GET /products?category=' OR 1=1--` (SQLi canary payload)
+2. Observer on SOC Dashboard:
+   - **AgentShield Panel** updates instantaneously via WebSocket (`AGENTSHIELD_SIGNAL`) with zero page reload.
+   - Automation score reaches **CRITICAL** (e.g. 90/100) with confidence 100%.
+   - **Automation Indicators Checklist** illuminates detected heuristics:
+     - [x] Rapid Reconnaissance (+15)
+     - [x] Endpoint Enumeration (+15)
+     - [x] API Enumeration (+15)
+     - [x] High Request Velocity (+15)
+     - [x] Authentication Probing (+10)
+     - [x] Multi-Stage Attack Sequence (+20)
+   - **Progression Tracker** visualizes chronological attack lifecycle:
+     `RECON → ENDPOINT_DISCOVERY → API_ENUMERATION → AUTH_PROBING → WAF_TRIGGER`
+   - Operator clicks **Drilldown Modal** to inspect sanitized evidence metrics and per-stage request timeline.
+   - **Risk Engine Integration**: The Risk Engine automatically incorporates the AgentShield result, adding the `agentshield_behavior` signal (+20) to the overall risk assessment.
+   - **Technical Disclaimer Highlighted**: The dashboard explicitly displays: *"AgentShield detects observable behavioral characteristics consistent with automated or agentic attack workflows. It does NOT identify specific AI models or claim proof of AI identity."*
 
 ### Act 4: Adaptive Deception & Containment (1:45 - 2:15)
 1. Policy engine dynamically classifies session as `CONTAIN + DECEIVE`.

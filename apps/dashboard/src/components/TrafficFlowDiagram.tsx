@@ -10,7 +10,7 @@ export const TrafficFlowDiagram: React.FC = () => {
             AEGIS Ω Real Architecture & Packet Pipeline
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Phase 5 Active: Gateway &rarr; Coraza WAF (CRS v4) &rarr; Event Pipeline &rarr; Explainable Risk Engine (0–100) &rarr; Live SOC Telemetry
+            Phase 6 Active: Gateway &rarr; Coraza WAF (CRS v4) &rarr; Event Pipeline &rarr; AgentShield Behavioral Engine &rarr; Explainable Risk Engine (0–100) &rarr; Live SOC Telemetry
           </p>
         </div>
         <div className="flex items-center gap-2">

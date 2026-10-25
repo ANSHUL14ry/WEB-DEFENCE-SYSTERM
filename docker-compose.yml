@@ -15,7 +15,8 @@ services:
       - ./database/migrations/02_waf_events.sql:/docker-entrypoint-initdb.d/02_waf_events.sql:ro
       - ./database/migrations/03_security_events.sql:/docker-entrypoint-initdb.d/03_security_events.sql:ro
       - ./database/migrations/04_risk_assessments.sql:/docker-entrypoint-initdb.d/04_risk_assessments.sql:ro
-      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/05_seed.sql:ro
+      - ./database/migrations/05_agent_shield.sql:/docker-entrypoint-initdb.d/05_agent_shield.sql:ro
+      - ./database/seed/seed.sql:/docker-entrypoint-initdb.d/06_seed.sql:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U aegis_admin -d aegis_security_db"]

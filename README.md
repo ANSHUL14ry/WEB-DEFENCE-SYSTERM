@@ -5,6 +5,7 @@
 [![Phase 3 Status](https://img.shields.io/badge/Phase%203-Real%20WAF%20Verified-emerald?style=flat-square)](.)
 [![Phase 4 Status](https://img.shields.io/badge/Phase%204-Security%20Pipeline%20Verified-emerald?style=flat-square)](.)
 [![Phase 5 Status](https://img.shields.io/badge/Phase%205-Risk%20Engine%20Verified-emerald?style=flat-square)](.)
+[![Phase 6 Status](https://img.shields.io/badge/Phase%206-AgentShield%20Verified-emerald?style=flat-square)](.)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
@@ -98,7 +99,7 @@ Phase 2 establishes a hardened, observable ingress layer:
 
 ### Running Automated Tests
 ```bash
-# Run all Phase 1-5 integration and unit tests (52 tests)
+# Run all Phase 1-6 integration and unit tests (77 tests)
 pytest tests/ -v
 ```
 
@@ -184,14 +185,52 @@ Phase 5 introduces a deterministic, explainable Threat Scoring Engine that conve
 
 ---
 
-## 7. Phase-by-Phase Roadmap
+## 7. Phase 6: AgentShield Behavioral Automation Engine
+
+Phase 6 introduces AgentShield, a deterministic behavioral analysis engine that detects observable characteristics of automated, systematic, or agentic attack workflows:
+1. **Behavioral Detection Methodology**:
+   - Analyzes sequential telemetry within a rolling 60-second temporal window linked by `trace_id` / `session_id`.
+   - **Zero ML Hallucination**: Operates purely on observable HTTP event streams without external AI APIs or random outputs.
+2. **Explicit Technical Integrity Mandate**:
+   - AgentShield detects *behavioral patterns consistent with automated/agentic attack activity*.
+   - It **does NOT** claim to identify specific AI models (e.g. ChatGPT, Claude) or prove that an attacker is an AI.
+3. **8 Deterministic Behavioral Signals**:
+   - `rapid_recon`: Probing multiple preliminary discovery routes (`/`, `/robots.txt`, `/sitemap.xml`) in rapid succession (+15).
+   - `endpoint_enumeration`: Systematic discovery of multiple application paths (>= 4 distinct paths) (+15).
+   - `api_enumeration`: Systematic probing of API endpoints (`/api/...`) (+15).
+   - `request_velocity`: Burst request pacing exceeding normal human interactive browsing (>= 5 requests in 60s) (+15).
+   - `authentication_probing`: Repeated requests directed at credential endpoints (`/login`, `/auth`) (+10).
+   - `repeated_waf_triggers`: Multiple Coraza WAF security rule violations recorded in trace (+15).
+   - `parameter_manipulation`: Parameter structure mutations/fuzzing against target route (+5). Parameter values are never recorded.
+   - `attack_sequence`: Multi-stage lifecycle progression across >= 3 stages (+20).
+4. **Attack Progression Tracking**:
+   - Recognizes multi-stage progression: `RECON → ENDPOINT_DISCOVERY → API_ENUMERATION → AUTH_PROBING → WAF_TRIGGER`.
+5. **Normalized Score & Severity Thresholds (0–100)**:
+   - `0 - 24`: **LOW** (Standard interactive traffic pattern)
+   - `25 - 49`: **MEDIUM** (Moderate automation patterns; scripted recon)
+   - `50 - 74`: **HIGH** (Elevated automation indicators across multiple attack stages)
+   - `75 - 100`: **CRITICAL** (Highly automated, systematic attack workflow)
+6. **Risk Engine Integration**:
+   - AgentShield severity contributes directly to overall threat risk:
+     - LOW: +0 pts
+     - MEDIUM: +5 pts
+     - HIGH: +10 pts
+     - CRITICAL: +20 pts (emitted as `agentshield_behavior` signal)
+7. **Real-Time SOC Dashboard & Persistence**:
+   - Stored in PostgreSQL `agent_shield_assessments` table.
+   - Multicasts real-time `AGENTSHIELD_SIGNAL` packets via WebSockets to the SOC Dashboard's interactive AgentShield Panel.
+   - Drilldown modal exposes structured evidence, stage progression, and sanitized parameter metrics.
+
+---
+
+## 8. Phase-by-Phase Roadmap
 
 - [x] **Phase 1: Foundation** (Docker Compose, Gateway, FastAPI, PostgreSQL, Origin, Dashboard Skeleton, Tests)
 - [x] **Phase 2: Gateway Hardening & Tracing** (Request ID validation, trace ID, JSON logs, security headers, limits, timeouts)
 - [x] **Phase 3: Real WAF** (Coraza engine v3 + OWASP CRS v4 integration, origin isolation, telemetry ingestion)
 - [x] **Phase 4: Event Pipeline** (Unified security event pipeline, deduplication, correlation, WebSocket streaming, SOC feed)
 - [x] **Phase 5: Risk Engine** (Deterministic 0-100 scoring & signal weighting)
-- [ ] **Phase 6: AgentShield** (Behavioral sequence analysis & agentic pattern detection)
+- [x] **Phase 6: AgentShield** (Behavioral sequence analysis & agentic pattern detection)
 - [ ] **Phase 7: Policy Engine** (ALLOW, BLOCK, CONTAIN + DECEIVE policies)
 - [ ] **Phase 8: Adaptive Honeypot** (Synthetic decoys: `/decoy-admin`, `/decoy-api`)
 - [ ] **Phase 9: Response Verification** (Origin impact validation & verification receipts)

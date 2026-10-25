@@ -82,9 +82,31 @@ def init_db():
                 CREATE INDEX IF NOT EXISTS idx_risk_severity ON risk_assessments(severity);
                 CREATE INDEX IF NOT EXISTS idx_risk_score ON risk_assessments(risk_score);
                 CREATE INDEX IF NOT EXISTS idx_risk_created_at ON risk_assessments(created_at DESC);
+
+                -- Phase 6: AgentShield assessments table
+                CREATE TABLE IF NOT EXISTS agent_shield_assessments (
+                    assessment_id VARCHAR(64) PRIMARY KEY,
+                    request_id VARCHAR(64) NOT NULL,
+                    trace_id VARCHAR(64) NOT NULL,
+                    session_id VARCHAR(64),
+                    agent_shield_score INT NOT NULL CHECK (agent_shield_score >= 0 AND agent_shield_score <= 100),
+                    severity VARCHAR(32) NOT NULL,
+                    confidence NUMERIC(4, 2) DEFAULT 1.00,
+                    signals JSONB DEFAULT '[]'::jsonb,
+                    attack_stages JSONB DEFAULT '[]'::jsonb,
+                    behavior_summary TEXT NOT NULL,
+                    engine_version VARCHAR(32) NOT NULL DEFAULT 'agentshield-v1',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_as_req_id ON agent_shield_assessments(request_id);
+                CREATE INDEX IF NOT EXISTS idx_as_trace_id ON agent_shield_assessments(trace_id);
+                CREATE INDEX IF NOT EXISTS idx_as_severity ON agent_shield_assessments(severity);
+                CREATE INDEX IF NOT EXISTS idx_as_score ON agent_shield_assessments(agent_shield_score);
+                CREATE INDEX IF NOT EXISTS idx_as_created_at ON agent_shield_assessments(created_at DESC);
             """))
             conn.commit()
-            logger.info("Security events and risk assessments tables and indexes verified.")
+            logger.info("Security events, risk assessments, and AgentShield tables and indexes verified.")
     except Exception as e:
         logger.error(f"Failed to initialize database tables: {e}")
 

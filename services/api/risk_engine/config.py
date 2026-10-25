@@ -43,6 +43,12 @@ class RiskEngineConfig:
     WEIGHT_HIGH_VELOCITY: int = 15                # >= 5 events in window
     WEIGHT_PROBING_MULTIPLE_ENDPOINTS: int = 10   # >= 3 distinct endpoints visited
 
+    # Phase 6: AgentShield Behavioral Contribution Mapping
+    WEIGHT_AGENT_SHIELD_LOW: int = 0
+    WEIGHT_AGENT_SHIELD_MEDIUM: int = 5
+    WEIGHT_AGENT_SHIELD_HIGH: int = 10
+    WEIGHT_AGENT_SHIELD_CRITICAL: int = 20
+
     # Endpoint Sensitivity Patterns
     HIGH_SENSITIVITY_PATTERNS: List[str] = [
         "/admin", "/admin/", "/api/users", "/api/auth", "/.env", "/config", "/etc/passwd", "/setup"

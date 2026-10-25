@@ -92,6 +92,7 @@ export interface SystemStatusData {
     waf_events_count?: number;
     security_events_count?: number;
     risk_assessments_count?: number;
+    agent_shield_assessments_count?: number;
     recent_events: Array<{
       service_name: string;
       event_type: string;
@@ -100,4 +101,48 @@ export interface SystemStatusData {
       created_at: string;
     }>;
   };
+}
+
+export interface AgentShieldSignal {
+  name: string;
+  score: number;
+  evidence: Record<string, any>;
+  reason: string;
+}
+
+export interface AttackStageItem {
+  stage: string;
+  timestamp: string;
+  method: string;
+  uri: string;
+  detail: string;
+}
+
+export interface AgentShieldAssessment {
+  assessment_id: string;
+  request_id: string;
+  trace_id: string;
+  session_id?: string | null;
+  agent_shield_score: number;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  confidence: number;
+  signals: AgentShieldSignal[];
+  attack_stages: string[];
+  attack_timeline?: AttackStageItem[];
+  behavior_summary: string;
+  engine_version: string;
+  disclaimer: string;
+  created_at: string;
+  timestamp?: string;
+}
+
+export interface AgentShieldStats {
+  total_assessments: number;
+  average_agent_shield_score: number;
+  critical_count: number;
+  high_count: number;
+  medium_count: number;
+  low_count: number;
+  recent_assessments: AgentShieldAssessment[];
+  disclaimer: string;
 }

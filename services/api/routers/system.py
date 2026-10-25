@@ -15,6 +15,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
     waf_events_count = 0
     security_events_count = 0
     risk_assessments_count = 0
+    agent_shield_assessments_count = 0
     recent_events = []
     
     if db_ok:
@@ -30,6 +31,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
 
             res_risk = db.execute(text("SELECT COUNT(*) FROM risk_assessments")).scalar()
             risk_assessments_count = int(res_risk) if res_risk is not None else 0
+
+            res_as = db.execute(text("SELECT COUNT(*) FROM agent_shield_assessments")).scalar()
+            agent_shield_assessments_count = int(res_as) if res_as is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -84,7 +88,12 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
                 "role": "Explainable Threat Scoring & Temporal Signal Weighting",
                 "version": "Phase 5 Active"
             },
-            "agent_shield": {"status": "scheduled", "type": "Behavioral Engine", "role": "Phase 6 Milestone"},
+            "agent_shield": {
+                "status": "operational",
+                "type": "Behavioral Automation & Sequence Analyzer",
+                "role": "Deterministic Automation Indicators & Attack Progression Detection",
+                "version": "Phase 6 Active"
+            },
             "honeypot": {"status": "scheduled", "type": "Isolated Decoy Environment", "role": "Phase 8 Milestone"}
         },
         "metrics": {
@@ -92,6 +101,7 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
             "waf_events_count": waf_events_count,
             "security_events_count": security_events_count,
             "risk_assessments_count": risk_assessments_count,
+            "agent_shield_assessments_count": agent_shield_assessments_count,
             "recent_events": recent_events
         }
     }

@@ -130,6 +130,22 @@ CREATE TABLE IF NOT EXISTS risk_assessments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 10. AgentShield Assessments (Behavioral Automation & Sequence Detection Store)
+CREATE TABLE IF NOT EXISTS agent_shield_assessments (
+    assessment_id VARCHAR(64) PRIMARY KEY,
+    request_id VARCHAR(64) NOT NULL,
+    trace_id VARCHAR(64) NOT NULL,
+    session_id VARCHAR(64),
+    agent_shield_score INT NOT NULL CHECK (agent_shield_score >= 0 AND agent_shield_score <= 100),
+    severity VARCHAR(32) NOT NULL,
+    confidence NUMERIC(4, 2) DEFAULT 1.00,
+    signals JSONB DEFAULT '[]'::jsonb,
+    attack_stages JSONB DEFAULT '[]'::jsonb,
+    behavior_summary TEXT NOT NULL,
+    engine_version VARCHAR(32) NOT NULL DEFAULT 'agentshield-v1',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_traffic_req_id ON traffic_logs(request_id);
 CREATE INDEX IF NOT EXISTS idx_traffic_source_ip ON traffic_logs(source_ip);

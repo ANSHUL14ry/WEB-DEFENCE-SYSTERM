@@ -12,6 +12,7 @@ from config import settings
 from models.events import map_waf_severity, sanitize_value
 from broadcaster import broadcaster
 from risk_engine.service import assess_event_risk
+from agent_shield.service import assess_event_behavior
 
 logger = logging.getLogger("aegis.waf_watcher")
 
@@ -230,9 +231,34 @@ async def start_waf_log_watcher():
                             }
                             await broadcaster.broadcast(normalized_broadcast)
 
-                            # Phase 5: Automatic Risk Engine Evaluation (Failure-Safe)
+                            # Phase 6: Automatic AgentShield Behavioral Analysis (Failure-Safe)
+                            as_assessment = None
                             try:
-                                risk_assessment = assess_event_risk(normalized_broadcast, db)
+                                as_assessment = assess_event_behavior(normalized_broadcast, db)
+                                if as_assessment:
+                                    as_update = {
+                                        "event_type": "AGENTSHIELD_SIGNAL",
+                                        "assessment_id": as_assessment["assessment_id"],
+                                        "request_id": as_assessment["request_id"],
+                                        "trace_id": as_assessment["trace_id"],
+                                        "agent_shield_score": as_assessment["agent_shield_score"],
+                                        "severity": as_assessment["severity"],
+                                        "confidence": as_assessment["confidence"],
+                                        "signals": as_assessment["signals"],
+                                        "attack_stages": as_assessment["attack_stages"],
+                                        "attack_timeline": as_assessment["attack_timeline"],
+                                        "behavior_summary": as_assessment["behavior_summary"],
+                                        "engine_version": as_assessment["engine_version"],
+                                        "disclaimer": as_assessment["disclaimer"],
+                                        "timestamp": as_assessment.get("timestamp") or datetime.now(timezone.utc).isoformat()
+                                    }
+                                    await broadcaster.broadcast(as_update)
+                            except Exception as as_err:
+                                logger.error(f"Automatic AgentShield analysis failed for WAF event (failure-safe): {as_err}")
+
+                            # Phase 5: Automatic Risk Engine Evaluation (Failure-Safe, consuming AgentShield)
+                            try:
+                                risk_assessment = assess_event_risk(normalized_broadcast, db, agent_shield_data=as_assessment)
                                 if risk_assessment:
                                     risk_update = {
                                         "event_type": "RISK_SCORE_UPDATE",
