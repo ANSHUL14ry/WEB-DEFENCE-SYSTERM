@@ -1,9 +1,9 @@
 """
-AEGIS Ω — Phase 9 Response Verification & Telemetry Proof Configuration
+AEGIS Ω — Phase 9 & Phase 11 Response Verification & Telemetry Proof Configuration
 Deterministic thresholds, statuses, and validation invariants.
 """
 
-ENGINE_VERSION = "verification-v1"
+ENGINE_VERSION = "verification-v2"
 
 # Verification Statuses
 RESULT_VERIFIED = "VERIFIED"
@@ -23,6 +23,7 @@ TYPE_NORMAL_ALLOW = "NORMAL_ALLOW"
 TYPE_POLICY_BLOCK = "POLICY_BLOCK"
 TYPE_DECEPTION = "DECEPTION"
 TYPE_DECEPTION_FAILURE = "DECEPTION_FAILURE"
+TYPE_NETWORK_DEFENSE = "NETWORK_DEFENSE"
 
 # Confidence Levels
 CONFIDENCE_FULL = 1.00

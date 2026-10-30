@@ -23,6 +23,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
     source_profiles_count = 0
     mitre_mappings_count = 0
     network_observations_count = 0
+    network_events_count = 0
+    network_enforcements_count = 0
+    network_anomalies_count = 0
     recent_events = []
     
     if db_ok:
@@ -62,6 +65,15 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
 
             res_no = db.execute(text("SELECT COUNT(*) FROM network_observations")).scalar()
             network_observations_count = int(res_no) if res_no is not None else 0
+
+            res_ne = db.execute(text("SELECT COUNT(*) FROM network_events")).scalar()
+            network_events_count = int(res_ne) if res_ne is not None else 0
+
+            res_nenf = db.execute(text("SELECT COUNT(*) FROM network_enforcements WHERE status = 'ACTIVE'")).scalar()
+            network_enforcements_count = int(res_nenf) if res_nenf is not None else 0
+
+            res_nanom = db.execute(text("SELECT COUNT(*) FROM network_anomalies WHERE severity IN ('ANOMALOUS', 'CRITICAL')")).scalar()
+            network_anomalies_count = int(res_nanom) if res_nanom is not None else 0
             
             rows = db.execute(text(
                 "SELECT service_name, event_type, severity, details, created_at "
@@ -140,6 +152,12 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
                 "role": "Deterministic Mitigation Verification & Origin Protection Proof",
                 "version": "Phase 9 Active"
             },
+            "network_defense": {
+                "status": "operational",
+                "type": "Suricata IDS/IPS & Network Behavior Correlator",
+                "role": "Real-time EVE Network Threat Feed, IPS Enforcement & DDoS Anomaly Radar",
+                "version": "Phase 11 Active"
+            },
             "threat_intel": {
                 "status": "operational",
                 "type": "Attacker Intelligence & Threat Context Engine",
@@ -161,6 +179,9 @@ def get_system_status(request: Request, db: Session = Depends(get_db)) -> Dict[s
             "source_profiles_count": source_profiles_count,
             "mitre_mappings_count": mitre_mappings_count,
             "network_observations_count": network_observations_count,
+            "network_events_count": network_events_count,
+            "network_enforcements_count": network_enforcements_count,
+            "network_anomalies_count": network_anomalies_count,
             "recent_events": recent_events
         }
     }

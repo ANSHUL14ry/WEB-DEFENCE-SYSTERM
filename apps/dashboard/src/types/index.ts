@@ -89,6 +89,7 @@ export interface SystemStatusData {
     deception_engine?: ServiceStatus;
     verification_engine?: ServiceStatus;
     threat_intel?: ServiceStatus;
+    network_defense?: ServiceStatus;
     honeypot: ServiceStatus;
   };
   metrics: {
@@ -104,6 +105,9 @@ export interface SystemStatusData {
     source_profiles_count?: number;
     mitre_mappings_count?: number;
     network_observations_count?: number;
+    network_events_count?: number;
+    network_enforcements_count?: number;
+    network_anomalies_count?: number;
     recent_events: Array<{
       service_name: string;
       event_type: string;
@@ -336,4 +340,76 @@ export interface SourceProfileRecord {
   latest_risk_score?: number | null;
   latest_agentshield_score?: number | null;
   latest_policy_decision?: string | null;
+}
+
+export interface NetworkEventItem {
+  event_id: string;
+  sensor: string;
+  event_type: string;
+  source_ip: string;
+  destination_ip?: string | null;
+  source_port?: number | null;
+  destination_port?: number | null;
+  protocol?: string | null;
+  severity: string;
+  signature?: string | null;
+  category?: string | null;
+  network_risk_score?: number;
+  mitre_technique_id?: string | null;
+  enforcement_action?: string;
+  metadata?: Record<string, any>;
+  timestamp: string;
+  created_at: string;
+}
+
+export interface NetworkEnforcementItem {
+  enforcement_id: string;
+  source_ip: string;
+  action: string;
+  status: string;
+  rate_limit_rps?: number | null;
+  duration_seconds?: number | null;
+  reason: string;
+  trigger_event_id?: string | null;
+  network_risk_score?: number | null;
+  expires_at?: string | null;
+  created_at: string;
+  released_at?: string | null;
+  audit_metadata?: Record<string, any>;
+}
+
+export interface NetworkAnomalyItem {
+  anomaly_id: string;
+  anomaly_type: string;
+  severity: string;
+  source_ip?: string | null;
+  destination_ip?: string | null;
+  metric_name: string;
+  current_value: number;
+  baseline_value: number;
+  deviation_factor: number;
+  mitigation_recommendation: string;
+  details: Record<string, any>;
+  created_at: string;
+}
+
+export interface NetworkDefenseStatusData {
+  status: string;
+  subsystem: string;
+  sensor: {
+    name: string;
+    status: string;
+    eve_log_path: string;
+  };
+  enforcement_mode: string;
+  active_enforcements_count: number;
+  traffic_baseline_rps: number;
+  stats: {
+    total_network_events: number;
+    ids_alerts_count: number;
+    active_enforcements_count: number;
+    anomalies_detected: number;
+    top_sources: Array<{ ip: string; count: number }>;
+    protocol_distribution: Record<string, number>;
+  };
 }

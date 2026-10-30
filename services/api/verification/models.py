@@ -8,6 +8,7 @@ import datetime
 
 
 class VerificationContext(BaseModel):
+    model_config = {"extra": "allow"}
     """Normalized evidence context consumed by the deterministic evaluator."""
     request_id: str
     trace_id: str
@@ -25,10 +26,13 @@ class VerificationContext(BaseModel):
     decoy_failed: bool = False
     has_sufficient_telemetry: bool = True
     telemetry_corrupted: bool = False
+    network_enforcement_action: Optional[str] = None
+    network_mitigation_verified: Optional[bool] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ProofObject(BaseModel):
+    model_config = {"extra": "allow"}
     """Structured, verifiable proof record demonstrating origin protection."""
     verification_id: str
     request_id: str
@@ -50,6 +54,13 @@ class ProofObject(BaseModel):
     failure_reason: Optional[str] = None
     engine_version: str = "verification-v1"
     created_at: str
+    @property
+    def verification_status(self) -> str:
+        return self.result
+
+    @property
+    def proof_points(self) -> List[Dict[str, str]]:
+        return [{"rule": p, "detail": p} for p in self.proof]
 
 
 class VerificationEvaluateRequest(BaseModel):
@@ -70,6 +81,8 @@ class VerificationEvaluateRequest(BaseModel):
     decoy_failed: Optional[bool] = False
     has_sufficient_telemetry: Optional[bool] = True
     telemetry_corrupted: Optional[bool] = False
+    network_enforcement_action: Optional[str] = None
+    network_mitigation_verified: Optional[bool] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 

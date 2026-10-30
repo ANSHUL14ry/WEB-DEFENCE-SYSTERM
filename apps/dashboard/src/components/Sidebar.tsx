@@ -9,7 +9,8 @@ import {
   Layers, 
   Flame, 
   Scale,
-  Compass
+  Compass,
+  Radio
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -28,6 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
     { id: 'deception', label: 'Decoy / Honeypot', icon: EyeOff, phase: 'Phase 8' },
     { id: 'verification', label: 'Mitigation Proof', icon: CheckCircle2, phase: 'Phase 9' },
     { id: 'intelligence', label: 'Attacker Intelligence', icon: Compass, phase: 'Phase 10' },
+    { id: 'network', label: 'Network Defense (IDS/IPS)', icon: Radio, phase: 'Phase 11' },
     { id: 'architecture', label: 'Architecture & Topology', icon: Layers, phase: 'Active' },
   ];
 

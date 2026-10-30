@@ -24,6 +24,10 @@ from enrichment.service import (
     enrich_security_event,
     ingest_network_observation_event
 )
+from network_defense.models import NormalizedNetworkEvent
+from network_defense.service import process_incoming_network_event
+import uuid
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/v1/enrichment", tags=["enrichment"])
 
@@ -93,8 +97,28 @@ async def ingest_network_sensor_event(
     """
     Ingest external sensor telemetry (Zeek / Suricata).
     Labels sensor source explicitly without claiming AEGIS WAF inspected raw packets.
+    Integrates directly with Phase 11 Network Risk & IPS Enforcement engines.
     """
     result = await ingest_network_observation_event(obs, db)
+
+    # Process through Phase 11 Network Defense Pipeline
+    norm_event = NormalizedNetworkEvent(
+        event_id=f"netev-{uuid.uuid4().hex[:16]}",
+        sensor=obs.sensor or "suricata",
+        event_type=obs.event_type or "ALERT",
+        source_ip=obs.source_ip,
+        destination_ip=obs.destination_ip,
+        destination_port=obs.destination_port,
+        protocol=obs.protocol or "TCP",
+        severity="HIGH" if ("scan" in (obs.event_type or "").lower() or obs.scan_indicator) else "INFO",
+        signature=obs.scan_indicator or obs.event_type,
+        category="network-sensor",
+        raw_reference=f"sensor:{obs.sensor}",
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        raw_metadata=obs.metadata or {}
+    )
+    await process_incoming_network_event(norm_event, db)
+
     return {
         "status": "ingested",
         "sensor": obs.sensor,

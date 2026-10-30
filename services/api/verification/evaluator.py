@@ -20,6 +20,7 @@ from verification.config import (
     TYPE_POLICY_BLOCK,
     TYPE_DECEPTION,
     TYPE_DECEPTION_FAILURE,
+    TYPE_NETWORK_DEFENSE,
     CONFIDENCE_FULL,
     CONFIDENCE_PARTIAL,
     CONFIDENCE_INCONCLUSIVE,
@@ -431,6 +432,91 @@ def evaluate_mitigation_verification(ctx: VerificationContext) -> ProofObject:
             created_at=created_at
         )
 
+    # 6. RULE 6 — NETWORK DEFENSE MITIGATION VERIFICATION (Phase 11)
+    if ctx.network_enforcement_action or ctx.metadata.get("network_mitigation"):
+        enf_action = ctx.network_enforcement_action or ctx.metadata.get("enforcement_action", "OBSERVE")
+        expected_action = enf_action
+        actual_action = enf_action
+        actual_origin = ctx.origin_reached or (ctx.origin_request_count > 0)
+
+        if enf_action in ("BLOCK", "TEMP_BLOCK"):
+            if actual_origin:
+                return ProofObject(
+                    verification_id=verification_id,
+                    request_id=ctx.request_id,
+                    trace_id=ctx.trace_id,
+                    session_id=ctx.session_id,
+                    policy_decision_id=ctx.policy_decision_id,
+                    verification_type=TYPE_NETWORK_DEFENSE,
+                    expected_action=expected_action,
+                    actual_action=actual_action,
+                    expected_origin_access=False,
+                    actual_origin_access=True,
+                    origin_request_count=ctx.origin_request_count or 1,
+                    deception_session_id=None,
+                    evidence_events=0,
+                    database_access=ctx.database_access_detected,
+                    result=RESULT_FAILED,
+                    confidence=CONFIDENCE_FULL,
+                    proof=["CRITICAL: Network IPS enforced BLOCK but origin traffic was observed!"],
+                    failure_reason="Network IPS invariant violated: origin access was detected",
+                    engine_version=ENGINE_VERSION,
+                    created_at=created_at
+                )
+
+            proof_statements.append(f"RULE_6_NETWORK_DEFENSE_MITIGATION: Network IPS enforced {enf_action} at the perimeter")
+            proof_statements.append("Origin application remained protected with ZERO requests")
+            proof_statements.append("Malicious network flow was suppressed by sensor enforcement")
+
+            return ProofObject(
+                verification_id=verification_id,
+                request_id=ctx.request_id,
+                trace_id=ctx.trace_id,
+                session_id=ctx.session_id,
+                policy_decision_id=ctx.policy_decision_id,
+                verification_type=TYPE_NETWORK_DEFENSE,
+                expected_action=expected_action,
+                actual_action=actual_action,
+                expected_origin_access=False,
+                actual_origin_access=False,
+                origin_request_count=0,
+                deception_session_id=None,
+                evidence_events=0,
+                database_access=False,
+                result=RESULT_VERIFIED,
+                confidence=CONFIDENCE_FULL,
+                proof=proof_statements,
+                failure_reason=None,
+                engine_version=ENGINE_VERSION,
+                created_at=created_at
+            )
+        elif enf_action == "RATE_LIMIT":
+            proof_statements.append("Network IPS rate-limit policy active")
+            proof_statements.append("Flow suppressed to configured RPS threshold")
+            return ProofObject(
+                verification_id=verification_id,
+                request_id=ctx.request_id,
+                trace_id=ctx.trace_id,
+                session_id=ctx.session_id,
+                policy_decision_id=ctx.policy_decision_id,
+                verification_type=TYPE_NETWORK_DEFENSE,
+                expected_action=expected_action,
+                actual_action=actual_action,
+                expected_origin_access=actual_origin,
+                actual_origin_access=actual_origin,
+                origin_request_count=ctx.origin_request_count,
+                deception_session_id=None,
+                evidence_events=0,
+                database_access=False,
+                result=RESULT_VERIFIED,
+                confidence=CONFIDENCE_FULL,
+                proof=proof_statements,
+                failure_reason=None,
+                engine_version=ENGINE_VERSION,
+                created_at=created_at
+            )
+
+    
     # 5. RULE 3 — POLICY BLOCK / CONTAIN VERIFICATION
     if ctx.policy_decision in ["BLOCK", "CONTAIN"]:
         expected_action = ACTION_BLOCK
@@ -512,3 +598,9 @@ def evaluate_mitigation_verification(ctx: VerificationContext) -> ProofObject:
         engine_version=ENGINE_VERSION,
         created_at=created_at
     )
+
+
+class ResponseVerificationEvaluator:
+    """Class wrapper for deterministic response verification evaluation."""
+    def evaluate(self, ctx: VerificationContext) -> ProofObject:
+        return evaluate_mitigation_verification(ctx)

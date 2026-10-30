@@ -14,7 +14,8 @@ import {
   Check, 
   Clock,
   Server,
-  Layers
+  Layers,
+  Radio
 } from 'lucide-react';
 
 interface StoryStep {
@@ -32,9 +33,32 @@ interface StoryStep {
 }
 
 export const AttackStoryVisualizer: React.FC = () => {
-  const [selectedStepIndex, setSelectedStepIndex] = useState<number>(10);
+  const [selectedStepIndex, setSelectedStepIndex] = useState<number>(11);
 
   const steps: StoryStep[] = [
+    {
+      id: 'step-0',
+      timestamp: '19:41:58.210',
+      stage: 'STAGE 0: NETWORK RECON',
+      title: 'Suricata EVE IDS Network Ingress Probe',
+      component: 'Suricata 7.0 Sensor (EVE)',
+      badgeColor: 'border-blue-800 bg-blue-950 text-blue-300',
+      icon: Radio,
+      metric: 'SYN / Port Probe & Flow Detection',
+      description: 'Network-layer sensor captures TCP SYN scan against ports 80/443/8080 and flags anomalous ingress flow.',
+      telemetryEvidence: {
+        sensor: 'suricata',
+        event_type: 'alert',
+        proto: 'TCP',
+        src_ip: '198.51.100.44',
+        dest_port: 8080,
+        signature: 'ET SCAN Potential Nmap Port Sweep / Vulnerability Scan',
+        signature_id: 2000001,
+        severity: 2,
+        mitre_technique: 'T1595.002'
+      },
+      originContacted: false
+    },
     {
       id: 'step-1',
       timestamp: '19:42:01.102',
@@ -255,7 +279,7 @@ export const AttackStoryVisualizer: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Chronological journey of an agentic attack from recon to deterministic mitigation proof
+              Chronological journey of an agentic attack from network recon to deterministic mitigation proof
             </p>
           </div>
         </div>
@@ -272,7 +296,7 @@ export const AttackStoryVisualizer: React.FC = () => {
       </div>
 
       {/* Narrative Progress Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-1.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-1.5">
         {steps.map((st, idx) => {
           const isSelected = idx === selectedStepIndex;
           const isPast = idx < selectedStepIndex;

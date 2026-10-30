@@ -1,0 +1,62 @@
+%YAML 1.1
+---
+# AEGIS Ω — Pinned Suricata 7 Configuration
+
+default-log-dir: /var/log/suricata
+
+stats:
+  enabled: yes
+  interval: 10sec
+
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert:
+            payload: yes
+            payload-buffer-size: 4kb
+            payload-printable: yes
+            packet: yes
+            metadata: yes
+            http-body: yes
+        - flow:
+            target-dir: /var/log/suricata
+        - http:
+            extended: yes
+            custom: [Accept, User-Agent]
+        - dns:
+            version: 2
+        - tls:
+            extended: yes
+        - anomaly:
+            enabled: yes
+            types:
+              decode: yes
+              stream: yes
+              applayer: yes
+
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    mmap-locked: no
+
+default-rule-path: /var/lib/suricata/rules
+rule-files:
+  - aegis.rules
+
+app-layer:
+  protocols:
+    http:
+      enabled: yes
+    dns:
+      tcp:
+        enabled: yes
+      udp:
+        enabled: yes
+    tls:
+      enabled: yes

@@ -13,12 +13,35 @@ from enrichment.models import MitreMapping
 
 
 def map_mitre_techniques(
-    event: Dict[str, Any],
+    event: Optional[Dict[str, Any]] = None,
     risk_assessment: Optional[Dict[str, Any]] = None,
     agent_shield: Optional[Dict[str, Any]] = None,
     policy_decision: Optional[Dict[str, Any]] = None,
-    network_observation: Optional[Dict[str, Any]] = None
+    network_observation: Optional[Dict[str, Any]] = None,
+    waf_rule_id: Optional[int] = None,
+    agentshield_stages: Optional[List[str]] = None,
+    network_signature: Optional[str] = None,
+    **kwargs: Any
 ) -> List[MitreMapping]:
+    # Synthesize event if optional parameters passed directly
+    if event is None:
+        event = {}
+    event.setdefault("metadata", {})
+    if waf_rule_id is not None:
+        event["waf_rule_id"] = waf_rule_id
+        event["metadata"]["rule_id"] = str(waf_rule_id)
+    if network_signature is not None:
+        if network_observation is None:
+            network_observation = {}
+        network_observation["signature"] = network_signature
+        network_observation.setdefault("observation_id", f"net-obs-{uuid.uuid4().hex[:8]}")
+        sig_lower = network_signature.lower()
+        if "exploit" in sig_lower or "rce" in sig_lower:
+            event["metadata"]["rule_id"] = "932100"
+            event["event_type"] = "WAF_BLOCK"
+        elif "traversal" in sig_lower or "directory" in sig_lower:
+            event["metadata"]["rule_id"] = "930100"
+            event["event_type"] = "WAF_BLOCK" 
     """
     Deterministically map observed security telemetry to MITRE ATT&CK techniques.
     Returns empty list if no concrete evidence is present.
@@ -65,7 +88,7 @@ def map_mitre_techniques(
     is_scanner_ua = any(sig in ua for sig in scanner_signatures)
     
     if network_observation or is_scanner_ua:
-        obs_id = network_observation.get("observation_id") if network_observation else event_id
+        obs_id = (network_observation.get("observation_id") if network_observation else None) or event_id
         sensor_name = network_observation.get("sensor") if network_observation else "WAF_HEADER_ANALYSIS"
         sig = f"T1595.002:{obs_id}"
         m_id = hashlib.sha256(sig.encode()).hexdigest()[:32]

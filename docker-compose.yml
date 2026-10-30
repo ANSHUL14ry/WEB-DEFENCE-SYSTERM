@@ -43,10 +43,13 @@ services:
       CORAZA_AUDIT_LOG_PATH: /var/log/coraza/audit.log
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080}
       DECOY_SERVICE_URL: ${DECOY_SERVICE_URL:-http://decoy:8090}
+      SURICATA_EVE_LOG_PATH: /var/log/suricata/eve.json
+      SURICATA_ENABLED: "true"
     ports:
       - "8001:8000"
     volumes:
       - waf_logs:/var/log/coraza:ro
+      - suricata_logs:/var/log/suricata:ro
     depends_on:
       db:
         condition: service_healthy
@@ -140,10 +143,30 @@ services:
     networks:
       - deception-net
 
+  # 8. Real Network Sensor — Suricata IDS/IPS (Phase 11)
+  suricata:
+    image: jasonish/suricata:7.0.2
+    container_name: aegis-suricata
+    restart: unless-stopped
+    command: -i eth0 -v
+    volumes:
+      - suricata_logs:/var/log/suricata
+      - ./services/suricata/suricata.yaml:/etc/suricata/suricata.yaml
+      - ./services/suricata/rules:/var/lib/suricata/rules
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    networks:
+      - aegis-net
+
+
 volumes:
   pgdata:
     driver: local
   waf_logs:
+    driver: local
+  suricata_logs:
     driver: local
 
 networks:

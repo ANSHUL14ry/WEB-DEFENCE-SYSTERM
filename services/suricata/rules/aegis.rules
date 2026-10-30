@@ -1,0 +1,21 @@
+# AEGIS Ω — Pinned Suricata 7 Local IDS/IPS Rules
+# Real packet-level network signatures for Port Scanning, Web Probing, Exploits, and DoS
+
+# 1. Network Reconnaissance & Port Scanning
+alert tcp any any -> any any (flags:S; threshold:type both, track by_src, count 10, seconds 5; msg:"AEGIS-SCAN High Velocity TCP SYN Port Sweep"; classtype:attempted-recon; sid:2001001; rev:1;)
+alert tcp any any -> any 22 (flags:S; msg:"AEGIS-SCAN SSH Port Reconnaissance"; classtype:attempted-recon; sid:2001002; rev:1;)
+alert tcp any any -> any 8080 (content:"Nmap"; http_header; msg:"AEGIS-SCAN Nmap Scripting Engine Probe"; classtype:attempted-recon; sid:2001003; rev:1;)
+alert tcp any any -> any any (content:"Nikto"; http_header; msg:"AEGIS-SCAN Nikto Web Vulnerability Scanner"; classtype:web-application-attack; sid:2001004; rev:1;)
+
+# 2. Application Layer & Injection Signatures
+alert http any any -> any any (http.uri; content:"UNION"; nocase; content:"SELECT"; nocase; msg:"AEGIS-ATTACK SQL Injection Attempt Detected via HTTP URI"; classtype:web-application-attack; sid:2002001; rev:1;)
+alert http any any -> any any (http.uri; content:"/etc/passwd"; msg:"AEGIS-ATTACK Local File Inclusion / Path Traversal Attempt"; classtype:web-application-attack; sid:2002002; rev:1;)
+alert http any any -> any any (http.uri; content:".env"; msg:"AEGIS-ATTACK Sensitive Environment File Probing"; classtype:attempted-recon; sid:2002003; rev:1;)
+alert http any any -> any any (http.uri; content:"<script>"; nocase; msg:"AEGIS-ATTACK Cross-Site Scripting (XSS) Payload in URI"; classtype:web-application-attack; sid:2002004; rev:1;)
+
+# 3. Authentication & Credential Probing
+alert http any any -> any any (http.method; content:"POST"; http.uri; content:"/login"; threshold:type both, track by_src, count 8, seconds 10; msg:"AEGIS-AUTH Potential Credential Stuffing / Auth Velocity Burst"; classtype:suspicious-login; sid:2003001; rev:1;)
+
+# 4. DoS / Volumetric Traffic Anomalies
+alert ip any any -> any any (threshold:type both, track by_src, count 100, seconds 5; msg:"AEGIS-DOS Connection Velocity Burst Detected"; classtype:denial-of-service; sid:2004001; rev:1;)
+alert icmp any any -> any any (threshold:type both, track by_src, count 50, seconds 2; msg:"AEGIS-DOS ICMP Ping Flood Anomaly"; classtype:denial-of-service; sid:2004002; rev:1;)

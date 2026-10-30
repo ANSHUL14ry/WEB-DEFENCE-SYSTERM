@@ -1,0 +1,1 @@
+from network_defense.network_policy.policy import evaluate_network_policy

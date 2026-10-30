@@ -9,6 +9,7 @@ import { PolicyEnginePanel } from './components/PolicyEnginePanel';
 import { DeceptionPanel } from './components/DeceptionPanel';
 import { VerificationPanel } from './components/VerificationPanel';
 import { AttackerIntelligencePanel } from './components/AttackerIntelligencePanel';
+import { NetworkDefensePanel } from './components/NetworkDefensePanel';
 import { AttackStoryVisualizer } from './components/AttackStoryVisualizer';
 import { SecurityEventsStream } from './components/SecurityEventsStream';
 import { SystemStatusData } from './types';
@@ -97,7 +98,10 @@ export const App: React.FC = () => {
             payload.event_type === 'MITIGATION_VERIFIED' ||
             payload.event_type === 'DECEPTION_EVENT' ||
             payload.event_type === 'WAF_BLOCK' ||
-            payload.event_type === 'POLICY_DECISION'
+            payload.event_type === 'POLICY_DECISION' ||
+            payload.event_type === 'NETWORK_EVENT_INGESTED' ||
+            payload.event_type === 'NETWORK_ENFORCEMENT_ACTION' ||
+            payload.event_type === 'NETWORK_ANOMALY_DETECTED'
           ) {
             fetchStatus();
           }
@@ -171,8 +175,8 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* 9 Real Backend Metrics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-3">
+              {/* 10 Real Backend Metrics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10 gap-3">
                 <div className="bg-soc-panel border border-soc-border rounded-xl p-3 flex flex-col justify-between">
                   <div>
                     <span className="text-slate-400 text-[10px] font-mono uppercase">GATEWAY INGRESS</span>
@@ -181,6 +185,22 @@ export const App: React.FC = () => {
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-soc-border/40">
                     <span className="text-[10px] text-cyan-400 font-mono">Nginx Hardened</span>
                     <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                  </div>
+                </div>
+
+                <div 
+                  onClick={() => setCurrentTab('network')}
+                  className="bg-soc-panel border border-blue-900/80 bg-blue-950/20 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-blue-500 transition-all"
+                >
+                  <div>
+                    <span className="text-blue-400 text-[10px] font-mono uppercase">NETWORK DEFENSE</span>
+                    <div className="text-lg font-bold font-mono text-blue-300 mt-0.5">
+                      {systemData?.metrics.network_events_count ?? 0}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-900/60">
+                    <span className="text-[10px] text-blue-400 font-mono">Suricata IDS/IPS</span>
+                    <Radio className="w-4 h-4 text-blue-400" />
                   </div>
                 </div>
 
@@ -346,6 +366,23 @@ export const App: React.FC = () => {
                 <AttackerIntelligencePanel apiBase={API_BASE} realtimeEvent={lastWsEvent} />
               </div>
 
+              {/* Network Defense Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs uppercase font-mono tracking-wider font-semibold text-slate-300 flex items-center gap-2">
+                    <Radio className="w-4 h-4 text-blue-400" />
+                    Real Network Defense &bull; IDS/IPS &amp; Anomaly Correlation (Phase 11)
+                  </h3>
+                  <button 
+                    onClick={() => setCurrentTab('network')}
+                    className="text-xs font-mono text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                  >
+                    Open Network Console <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+                <NetworkDefensePanel apiBase={API_BASE} realtimeEvent={lastWsEvent} />
+              </div>
+
               {/* Microservices Matrix */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -480,6 +517,13 @@ export const App: React.FC = () => {
           {currentTab === 'intelligence' && (
             <div className="space-y-4">
               <AttackerIntelligencePanel apiBase={API_BASE} realtimeEvent={lastWsEvent} />
+            </div>
+          )}
+
+          {/* NETWORK DEFENSE TAB */}
+          {currentTab === 'network' && (
+            <div className="space-y-4">
+              <NetworkDefensePanel apiBase={API_BASE} realtimeEvent={lastWsEvent} />
             </div>
           )}
 

@@ -135,6 +135,8 @@ def evaluate_and_record_verification(
         decoy_failed=req.decoy_failed or False,
         has_sufficient_telemetry=req.has_sufficient_telemetry if req.has_sufficient_telemetry is not None else True,
         telemetry_corrupted=req.telemetry_corrupted or False,
+        network_enforcement_action=req.network_enforcement_action,
+        network_mitigation_verified=req.network_mitigation_verified,
         metadata=req.metadata
     )
 

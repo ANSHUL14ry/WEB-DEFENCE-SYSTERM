@@ -5,7 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from database import check_db_connection, init_db
-from routers import health, system, waf, events, risk, agent_shield, policy, deception, verification, enrichment
+from routers import health, system, waf, events, risk, agent_shield, policy, deception, verification, enrichment, network_defense
+from network_defense.suricata_adapter.eve_watcher import start_suricata_eve_watcher
 from waf_log_watcher import start_waf_log_watcher
 
 logging.basicConfig(
@@ -26,11 +27,13 @@ async def lifespan(app: FastAPI):
         
     # Start Coraza WAF audit log watcher background task
     watcher_task = asyncio.create_task(start_waf_log_watcher())
+    suricata_task = asyncio.create_task(start_suricata_eve_watcher())
     
     yield
     
     logger.info("Shutting down AEGIS Ω Control Plane API.")
     watcher_task.cancel()
+    suricata_task.cancel()
 
 app = FastAPI(
     title="AEGIS Ω Control Plane API",
@@ -59,6 +62,7 @@ app.include_router(policy.router)
 app.include_router(deception.router)
 app.include_router(verification.router)
 app.include_router(enrichment.router)
+app.include_router(network_defense.router)
 
 @app.get("/")
 def root():
