@@ -445,7 +445,9 @@ export const SecurityEventsStream: React.FC<SecurityEventsStreamProps> = ({ apiB
 
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Source IP:</span>
-                <span className="text-slate-200">{selectedEvent.source.ip}</span>
+                <span className={`font-mono font-semibold ${selectedEvent.source.ip && selectedEvent.source.ip !== 'UNKNOWN' && selectedEvent.source.ip !== 'unknown' ? 'text-cyan-400' : 'text-slate-500'}`}>
+                  {selectedEvent.source.ip && selectedEvent.source.ip !== 'unknown' ? selectedEvent.source.ip : 'UNKNOWN'}
+                </span>
               </div>
 
               <div className="flex items-center justify-between">

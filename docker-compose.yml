@@ -35,6 +35,8 @@ services:
       dockerfile: Dockerfile
     container_name: aegis-api
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-aegis_admin}:${POSTGRES_PASSWORD:-aegis_secure_hackathon_pass_2026}@db:5432/${POSTGRES_DB:-aegis_security_db}
       AEGIS_ENV: ${AEGIS_ENV:-development}
@@ -43,6 +45,7 @@ services:
       CORAZA_AUDIT_LOG_PATH: /var/log/coraza/audit.log
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080}
       DECOY_SERVICE_URL: ${DECOY_SERVICE_URL:-http://decoy:8090}
+      ORIGIN_SERVICE_URL: ${AEGIS_ORIGIN_URL:-http://host.docker.internal:8088}
       SURICATA_EVE_LOG_PATH: /var/log/suricata/eve.json
       SURICATA_ENABLED: "true"
     ports:
@@ -74,8 +77,10 @@ services:
       dockerfile: Dockerfile
     container_name: aegis-waf
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      BACKEND: "origin:8088"
+      BACKEND: ${AEGIS_ORIGIN_HOST:-host.docker.internal:8088}
       PORT: "8080"
       CORAZA_RULE_ENGINE: ${WAF_RULE_ENGINE:-On} # On for BLOCK mode, DetectionOnly for DETECTION
       CORAZA_REQ_BODY_ACCESS: "On"
@@ -99,6 +104,8 @@ services:
       dockerfile: Dockerfile
     container_name: aegis-gateway
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:80"
     depends_on:

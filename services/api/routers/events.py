@@ -44,7 +44,7 @@ def row_to_event_dict(row: Any) -> Dict[str, Any]:
         "trace_id": row.trace_id,
         "session_id": row.session_id,
         "source": {
-            "ip": row.source_ip or "unknown",
+            "ip": row.source_ip or "UNKNOWN",
             "user_agent": row.user_agent
         },
         "request": {
@@ -108,7 +108,7 @@ async def ingest_security_event(event: SecurityEventCreate, db: Session = Depend
             "action": event.action,
             "component": event.component,
             "status": event.status,
-            "source_ip": event.source.ip,
+            "source_ip": event.source.ip if (event.source and event.source.ip and event.source.ip.lower() != "unknown") else "UNKNOWN",
             "user_agent": event.source.user_agent,
             "method": event.request.method,
             "uri": sanitized_uri,

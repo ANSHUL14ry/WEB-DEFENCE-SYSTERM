@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import ipaddress
 import json
 import logging
 import os
@@ -16,6 +17,72 @@ from agent_shield.service import assess_event_behavior
 from policy_engine.service import evaluate_and_record_policy
 
 logger = logging.getLogger("aegis.waf_watcher")
+
+# Internal container/proxy subnets (never report these as the attacker/client IP)
+INTERNAL_DOCKER_SUBNETS = [
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("::1/128"),
+]
+
+def is_valid_ip(ip_str: Optional[str]) -> bool:
+    if not ip_str or not isinstance(ip_str, str):
+        return False
+    try:
+        ipaddress.ip_address(ip_str.strip())
+        return True
+    except (ValueError, AttributeError):
+        return False
+
+def is_internal_docker_ip(ip_str: Optional[str]) -> bool:
+    if not is_valid_ip(ip_str):
+        return False
+    try:
+        ip_obj = ipaddress.ip_address(ip_str.strip())
+        return any(ip_obj in subnet for subnet in INTERNAL_DOCKER_SUBNETS)
+    except Exception:
+        return False
+
+def extract_header_ip(headers: Dict[str, Any], header_name: str) -> Optional[str]:
+    """Extract and validate the first IP from a specified header in Coraza audit log."""
+    target_key = header_name.lower()
+    for k, v in headers.items():
+        if k.lower() == target_key:
+            val = None
+            if isinstance(v, list) and len(v) > 0:
+                val = str(v[0])
+            elif isinstance(v, str):
+                val = v
+            
+            if val:
+                first_ip = val.split(",")[0].strip()
+                if is_valid_ip(first_ip):
+                    return first_ip
+    return None
+
+def resolve_trusted_client_ip(tx: Dict[str, Any], headers: Dict[str, Any]) -> str:
+    """
+    Resolve authoritative original client IP using AEGIS Trust Boundary:
+    Priority:
+    1. X-Original-Client-IP (explicit header established at AEGIS ingress boundary)
+    2. X-Real-IP (established at AEGIS ingress boundary)
+    3. X-Forwarded-For (first hop established at AEGIS ingress boundary)
+    4. Direct socket peer address (tx['client_ip']), ONLY if it is not an internal container proxy IP
+    5. "UNKNOWN" fallback
+    """
+    for header in ["x-original-client-ip", "x-real-ip", "x-forwarded-for"]:
+        extracted = extract_header_ip(headers, header)
+        if extracted:
+            return extracted
+
+    raw_peer = tx.get("client_ip")
+    if is_valid_ip(raw_peer):
+        clean_peer = raw_peer.strip()
+        if not is_internal_docker_ip(clean_peer):
+            return clean_peer
+
+    return "UNKNOWN"
 
 def parse_coraza_message(msg_str: str) -> Dict[str, Any]:
     """Parse key attributes from a Coraza rule match message string."""
@@ -97,7 +164,10 @@ async def start_waf_log_watcher():
                     action = "BLOCK" if tx.get("is_interrupted", False) else "DETECT"
                     method = req.get("method", "GET")
                     uri = req.get("uri", "/")
-                    client_ip = tx.get("client_ip", "unknown")
+                    
+                    # Resolve authoritative client IP vs immediate proxy/container peer
+                    peer_ip = tx.get("client_ip", "unknown")
+                    client_ip = resolve_trusted_client_ip(tx, headers)
 
                     messages = event_data.get("messages", [])
                     primary_rule_id = 0
@@ -144,7 +214,9 @@ async def start_waf_log_watcher():
                         "anomaly_score": anomaly_score,
                         "matched_data": sanitize_value(matched_data),
                         "engine": "coraza-v3",
-                        "crs_ruleset": "OWASP_CRS_v4.30.0"
+                        "crs_ruleset": "OWASP_CRS_v4.30.0",
+                        "client_ip": client_ip,
+                        "peer_ip": peer_ip
                     }
 
                     # Persist events into PostgreSQL
